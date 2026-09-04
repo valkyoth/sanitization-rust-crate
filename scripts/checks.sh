@@ -13,6 +13,7 @@ scripts/lint-storage-policies.py \
     --root crates/sanitization/examples/high_assurance_policy.rs \
     --policy-file crates/sanitization/examples/high_assurance_policy.rs
 scripts/test-fail-closed-initialization-lint.py
+scripts/test-leakage-evidence-policy.py
 scripts/lint-fail-closed-initialization.py \
     --root crates/sanitization/src \
     --exclude-file crates/sanitization/src/tests.rs

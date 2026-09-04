@@ -138,10 +138,9 @@ def verify_leakage(path: Path, expected_commit: str) -> None:
     minimum_confirmations = summary.get("minimum_confirmation_runs")
     config = summary.get("config")
     if (
-        not isinstance(minimum_confirmations, int)
-        or minimum_confirmations < 2
+        minimum_confirmations != 2
         or not isinstance(config, dict)
-        or config.get("confirmation_runs") != minimum_confirmations
+        or config.get("confirmation_runs") != 2
     ):
         fail(f"{path} has an invalid confirmation policy")
     runs = summary.get("runs")
@@ -158,8 +157,6 @@ def verify_leakage(path: Path, expected_commit: str) -> None:
         if len(seeds) < 3 or len(seeds) != len(variant_runs):
             fail(f"{path} requires at least three distinct {variant} seeds")
         for run in variant_runs:
-            if run.get("passed") is not True:
-                fail(f"{path} contains an unaccepted {variant} run")
             seed = run.get("seed")
             attempts = run.get("attempts")
             if not isinstance(seed, int) or not isinstance(attempts, list) or not attempts:
@@ -224,25 +221,31 @@ def verify_leakage(path: Path, expected_commit: str) -> None:
                     fail(f"{report_path} case coverage mismatch")
 
             primary_passed = attempt_results[0]
+            primary = attempts[0]
+            confirmation_required = (
+                primary.get("process_exit_code") == 1
+                and primary.get("report_passed") is False
+            )
             if run.get("primary_passed") is not primary_passed:
                 fail(f"{path} misstates the {variant} primary result")
-            if run.get("confirmation_required") is not (not primary_passed):
+            if run.get("confirmation_required") is not confirmation_required:
                 fail(f"{path} misstates the {variant} confirmation requirement")
+            if run.get("passed") is not primary_passed:
+                fail(f"{path} misstates release acceptance for the {variant} primary")
             if primary_passed:
+                if run.get("confirmations_passed") is not None:
+                    fail(f"{path} invents a {variant} confirmation result")
                 if len(attempt_results) != 1:
                     fail(f"{path} contains unnecessary {variant} confirmation runs")
             else:
-                primary = attempts[0]
-                if (
-                    primary.get("process_exit_code") != 1
-                    or primary.get("report_passed") is not False
-                ):
-                    fail(f"{path} confirms a non-threshold {variant} failure")
-                if (
-                    len(attempt_results) != 1 + minimum_confirmations
-                    or not all(attempt_results[1:])
-                ):
-                    fail(f"{path} contains a reproduced {variant} timing excursion")
+                if not confirmation_required:
+                    fail(f"{path} contains a release-blocking operational failure")
+                if len(attempt_results) != 1 + minimum_confirmations:
+                    fail(f"{path} has incomplete {variant} diagnostic confirmations")
+                confirmations_passed = all(attempt_results[1:])
+                if run.get("confirmations_passed") is not confirmations_passed:
+                    fail(f"{path} misstates the {variant} confirmation result")
+                fail(f"{path} contains a release-blocking {variant} primary excursion")
 
 
 def verify_performance(path: Path, expected_commit: str, allow_dirty: bool) -> None:

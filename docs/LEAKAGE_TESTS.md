@@ -132,10 +132,11 @@ The collector requires at least three distinct seeds for each of the
 `default-compare` and `strict-compare` variants. It records and hashes every
 underlying report; one passing seed is not accepted as release evidence. If a
 primary run exceeds the threshold, the collector preserves that report and
-runs two fresh same-seed confirmations. The excursion is accepted as isolated
-only when both confirmations pass. A failure in either confirmation remains a
-release-blocking result. This policy does not increase the threshold or retry
-until a passing result appears.
+runs exactly two fresh same-seed confirmations for diagnosis. The primary
+excursion remains release-blocking even if both confirmations pass. An
+operator must investigate it and produce a new candidate commit or record a
+separate reviewed waiver outside this evidence pipeline. This policy does not
+increase the threshold or retry until a passing result appears.
 
 `strict-compare` only strengthens equal-length byte equality. Ordering,
 selection, copy, swap, and lookup remain portable and are intentionally rerun

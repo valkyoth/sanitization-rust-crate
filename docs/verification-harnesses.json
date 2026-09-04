@@ -94,7 +94,7 @@
     },
     {
       "name": "multi-seed-native-leakage",
-      "claim": "Default and strict comparison profiles cover every listed CT primitive with at least three distinct seeds per native evidence target.",
+      "claim": "Default and strict comparison profiles cover every listed CT primitive with at least three distinct seeds per native evidence target; any primary threshold excursion fails closed while exactly two same-seed confirmations remain diagnostic only.",
       "command": "scripts/collect-leakage-evidence.py --output-dir target/cp20/leakage"
     },
     {
@@ -111,6 +111,11 @@
       "name": "verification-negative-fixtures",
       "claim": "Evidence and codegen validators reject seeded malformed inputs.",
       "command": "scripts/test-verification-fail-closed.py"
+    },
+    {
+      "name": "leakage-evidence-policy-fixtures",
+      "claim": "Leakage evidence rejects retry-based acceptance after a failed primary and enforces exactly two diagnostic confirmation runs.",
+      "command": "scripts/test-leakage-evidence-policy.py"
     },
     {
       "name": "downstream-2.0-migration",

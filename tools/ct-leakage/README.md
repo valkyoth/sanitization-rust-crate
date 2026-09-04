@@ -49,9 +49,9 @@ scripts/collect-leakage-evidence.py \
 
 The collector uses reproducible seeds, runs both default comparison and
 `strict-compare` variants, and hashes each raw report. A primary threshold
-excursion is retained and followed by two fresh same-seed confirmations. Both
-confirmations must pass for the excursion to be classified as isolated;
-otherwise the collector fails. This avoids accepting a single noisy sample
+excursion is retained and followed by exactly two fresh same-seed
+confirmations for diagnosis. The primary excursion always fails the collector,
+even when both confirmations pass. This keeps the release decision fail-closed
 without weakening the configured threshold or retrying indefinitely.
 
 For high-assurance release evidence, collect output on each target machine and

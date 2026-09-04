@@ -116,7 +116,8 @@
         "at least three distinct strict-comparison seeds",
         "fixed equality sizes 16, 32, and 64",
         "ordering, selection, option/result, copy, swap, and oblivious lookup",
-        "hashed per-run reports with commit and target metadata"
+        "hashed per-run reports with commit and target metadata",
+        "fail-closed primary excursions with exactly two diagnostic confirmations"
       ]
     },
     {

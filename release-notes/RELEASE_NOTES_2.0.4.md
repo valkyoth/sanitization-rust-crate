@@ -16,9 +16,10 @@ without changing the public API or the Rust `1.90.0` MSRV.
 - Mapped growth and staged replacement preserve established preferred
   controls. If a control accepted for the current storage cannot be
   re-established, replacement fails before the old value or report changes.
-- Multi-seed timing evidence retains an isolated primary excursion and requires
-  two fresh same-seed confirmations to pass. A repeated excursion remains
-  release-blocking, and the Welch threshold is unchanged.
+- Multi-seed timing evidence treats every primary threshold excursion as
+  release-blocking. Exactly two fresh same-seed confirmations are retained for
+  diagnosis but cannot convert the failure into accepted evidence; the Welch
+  threshold is unchanged.
 - The performance baseline keeps detailed measurements in its structured JSON
   artifact but no longer prints the complete report to CI logs. Console output
   now contains only a fixed pass/fail status, resolving the CodeQL

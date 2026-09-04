@@ -152,8 +152,9 @@ scripts/verify-target-evidence.py \
 ```
 
 The collector retains every primary result. A primary threshold excursion
-triggers two fresh same-seed confirmations, and both must pass; a repeated
-excursion fails the release gate. The verifier checks that policy and every
+triggers exactly two fresh same-seed confirmations for diagnosis and always
+fails the release gate. Confirmation passes cannot convert the failed primary
+into accepted evidence. The verifier checks that fail-closed policy and every
 raw-report digest.
 
 Run the relative performance regression baseline:

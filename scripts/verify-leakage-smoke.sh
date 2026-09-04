@@ -34,7 +34,7 @@ python3 scripts/collect-leakage-evidence.py \
     $'\u00a0--inner' 2 \
     $'\u00a0--warmup' 2 \
     $'\u00a0--threshold' 1000000000 >/dev/null
-python3 -c 'import json, sys; report = json.load(open(sys.argv[1], encoding="utf-8")); assert report["schema_version"] == 2; assert report["passed"] is True; assert report["minimum_confirmation_runs"] == 2; assert report["required_variants"] == ["default-compare", "strict-compare"]; assert len(report["runs"]) == 6; assert all(run["primary_passed"] is True and run["confirmation_required"] is False and len(run["attempts"]) == 1 for run in report["runs"])' \
+python3 -c 'import json, sys; report = json.load(open(sys.argv[1], encoding="utf-8")); assert report["schema_version"] == 2; assert report["passed"] is True; assert report["minimum_confirmation_runs"] == 2; assert report["config"]["confirmation_runs"] == 2; assert report["required_variants"] == ["default-compare", "strict-compare"]; assert len(report["runs"]) == 6; assert all(run["passed"] is True and run["primary_passed"] is True and run["confirmation_required"] is False and run["confirmations_passed"] is None and len(run["attempts"]) == 1 for run in report["runs"])' \
     "$multi_output/summary.json"
 
 printf 'ct leakage smoke check passed: %s\n' "$output"

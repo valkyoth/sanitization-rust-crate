@@ -118,6 +118,23 @@ def normalize_cli_args(arguments: list[str]) -> list[str]:
     return [argument.strip().strip("\ufeff").strip() for argument in arguments]
 
 
+def evaluate_attempts(
+    attempts: list[dict[str, object]],
+) -> tuple[bool, bool, bool | None]:
+    """Return release acceptance, confirmation need, and diagnostic result."""
+    primary = attempts[0]
+    primary_passed = primary["passed"] is True
+    confirmation_required = (
+        primary["process_exit_code"] == 1 and primary["report_passed"] is False
+    )
+    confirmations_passed = (
+        all(attempt["passed"] is True for attempt in attempts[1:])
+        if confirmation_required and len(attempts) > 1
+        else None
+    )
+    return primary_passed, confirmation_required, confirmations_passed
+
+
 def collect_attempt(
     *,
     variant: str,
@@ -209,16 +226,14 @@ def main() -> int:
         help="comma-separated decimal or 0x-prefixed u64 values",
     )
     args = parser.parse_args(normalize_cli_args(sys.argv[1:]))
-    if (
-        args.samples < 2
-        or args.inner < 1
-        or args.warmup < 0
-        or args.threshold <= 0
-        or args.confirmation_runs < MINIMUM_CONFIRMATION_RUNS
-    ):
+    if args.confirmation_runs != MINIMUM_CONFIRMATION_RUNS:
         fail(
-            "samples, inner, warmup, threshold, and confirmation-runs must "
-            "describe a valid evidence run"
+            "confirmation-runs must be exactly "
+            f"{MINIMUM_CONFIRMATION_RUNS} for release evidence"
+        )
+    if args.samples < 2 or args.inner < 1 or args.warmup < 0 or args.threshold <= 0:
+        fail(
+            "samples, inner, warmup, and threshold must describe a valid evidence run"
         )
 
     output_dir = args.output_dir.resolve()
@@ -243,12 +258,7 @@ def main() -> int:
                     threshold=args.threshold,
                 )
             ]
-            primary = attempts[0]
-            primary_passed = primary["passed"] is True
-            confirmation_required = (
-                primary["process_exit_code"] == 1
-                and primary["report_passed"] is False
-            )
+            primary_passed, confirmation_required, _ = evaluate_attempts(attempts)
             if confirmation_required:
                 for confirmation in range(1, args.confirmation_runs + 1):
                     attempts.append(
@@ -266,10 +276,7 @@ def main() -> int:
                             threshold=args.threshold,
                         )
                     )
-            accepted = primary_passed or (
-                confirmation_required
-                and all(attempt["passed"] is True for attempt in attempts[1:])
-            )
+            accepted, _, confirmations_passed = evaluate_attempts(attempts)
             runs.append(
                 {
                     "variant": variant,
@@ -277,6 +284,7 @@ def main() -> int:
                     "passed": accepted,
                     "primary_passed": primary_passed,
                     "confirmation_required": confirmation_required,
+                    "confirmations_passed": confirmations_passed,
                     "attempts": attempts,
                 }
             )
@@ -306,10 +314,11 @@ def main() -> int:
     summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(summary_path)
     for run in runs:
-        if run["passed"] is True and run["confirmation_required"] is True:
+        if run["confirmation_required"] is True:
+            result = "passed" if run["confirmations_passed"] is True else "failed"
             print(
-                "collect-leakage-evidence: isolated primary excursion was not "
-                f"reproduced by {args.confirmation_runs} confirmations "
+                "collect-leakage-evidence: primary excursion is release-blocking; "
+                f"{args.confirmation_runs} diagnostic confirmations {result} "
                 f"variant={run['variant']} seed={run['seed']}",
                 file=sys.stderr,
             )
