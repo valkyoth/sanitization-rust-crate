@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.4
+
+- Pin release development to Rust `1.98.1` while retaining Rust `1.90.0` as
+  the minimum supported Rust version and extending the compatibility matrix
+  through the new stable release.
+- Update `syn` to `3.0.4`, BLAKE3 to `1.8.7`, and refresh all workspace and
+  standalone-tool lockfiles to current compatible dependency releases.
+- Update the pinned `Swatinem/rust-cache` GitHub Action to `2.9.2`; confirm
+  checkout, artifact upload, and Kani actions remain current and SHA-pinned.
+- Stop emitting full performance-baseline reports to CI stdout. Structured
+  benchmark evidence remains in the requested JSON artifact, while console
+  output is restricted to a fixed pass/fail status message.
+- Coordinate all five workspace crates and the exact runtime/derive dependency
+  at version `2.0.4`.
+
 ## 2.0.3
 
 - Add policy-aware, in-place runtime-length constructors for

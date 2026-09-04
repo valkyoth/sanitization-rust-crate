@@ -27,7 +27,7 @@
       "sha256": "09a78c69ec6e83e2b2effd9fe0049af29814e7a4925c403cb73ef17fe0b7f0a1"
     }
   },
-  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
   "schema_version": 1,
   "source_checkpoint": "docs/baselines/2.0/current-source-api.json",
   "tool": "cargo-public-api 0.52.0"

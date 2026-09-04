@@ -115,7 +115,10 @@ fn main() {
         eprintln!("failed to write {}: {error}", config.output.display());
         std::process::exit(1);
     });
-    println!("{report}");
+    println!(
+        "performance baseline {} (structured report written to the requested output file)",
+        if passed { "passed" } else { "failed" }
+    );
     if !passed {
         std::process::exit(1);
     }
