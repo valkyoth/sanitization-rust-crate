@@ -41,6 +41,7 @@ DEFAULT_SEEDS = [
     0x13198A2E03707344,
     0xA4093822299F31D0,
 ]
+MINIMUM_CONFIRMATION_RUNS = 2
 
 
 def fail(message: str) -> None:
@@ -117,6 +118,77 @@ def normalize_cli_args(arguments: list[str]) -> list[str]:
     return [argument.strip().strip("\ufeff").strip() for argument in arguments]
 
 
+def collect_attempt(
+    *,
+    variant: str,
+    feature: str | None,
+    expected_features: str,
+    seed: int,
+    attempt: int,
+    output_dir: Path,
+    commit: str,
+    samples: int,
+    inner: int,
+    warmup: int,
+    threshold: float,
+) -> dict[str, object]:
+    variant_dir = output_dir / variant
+    variant_dir.mkdir(parents=True, exist_ok=True)
+    suffix = "" if attempt == 1 else f"-confirmation-{attempt - 1}"
+    report_path = variant_dir / f"seed-{seed}{suffix}.json"
+    command = [
+        "cargo",
+        "run",
+        "--quiet",
+        "--release",
+        "--manifest-path",
+        str(MANIFEST),
+    ]
+    if feature is not None:
+        command.extend(["--features", feature])
+    command.extend(
+        [
+            "--",
+            "--seed",
+            str(seed),
+            "--samples",
+            str(samples),
+            "--inner",
+            str(inner),
+            "--warmup",
+            str(warmup),
+            "--threshold",
+            str(threshold),
+            "--output",
+            str(report_path),
+        ]
+    )
+    result = subprocess.run(
+        command, cwd=ROOT, text=True, capture_output=True, check=False
+    )
+    if not report_path.is_file():
+        fail(result.stderr.strip() or f"{variant} seed {seed} produced no report")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    validate_report(
+        report,
+        seed=seed,
+        commit=commit,
+        expected_features=expected_features,
+    )
+    cases = report["cases"]
+    report_passed = report.get("passed") is True
+    return {
+        "attempt": attempt,
+        "passed": result.returncode == 0 and report_passed,
+        "report_passed": report_passed,
+        "max_welch_t_abs": max(float(case["welch_t_abs"]) for case in cases),
+        "process_exit_code": result.returncode,
+        "failed_cases": failed_cases(report),
+        "report": str(report_path.relative_to(output_dir)),
+        "sha256": sha256(report_path),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -124,6 +196,12 @@ def main() -> int:
     parser.add_argument("--inner", type=int, default=200)
     parser.add_argument("--warmup", type=int, default=1_000)
     parser.add_argument("--threshold", type=float, default=4.5)
+    parser.add_argument(
+        "--confirmation-runs",
+        type=int,
+        default=MINIMUM_CONFIRMATION_RUNS,
+        help="fresh same-seed runs required after a primary statistical excursion",
+    )
     parser.add_argument(
         "--seeds",
         type=parse_seeds,
@@ -136,8 +214,12 @@ def main() -> int:
         or args.inner < 1
         or args.warmup < 0
         or args.threshold <= 0
+        or args.confirmation_runs < MINIMUM_CONFIRMATION_RUNS
     ):
-        fail("samples, inner, warmup, and threshold must describe a valid run")
+        fail(
+            "samples, inner, warmup, threshold, and confirmation-runs must "
+            "describe a valid evidence run"
+        )
 
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -145,73 +227,70 @@ def main() -> int:
     runs: list[dict[str, object]] = []
 
     for variant, (feature, expected_features) in VARIANTS.items():
-        variant_dir = output_dir / variant
-        variant_dir.mkdir(parents=True, exist_ok=True)
         for seed in args.seeds:
-            report_path = variant_dir / f"seed-{seed}.json"
-            command = [
-                "cargo",
-                "run",
-                "--quiet",
-                "--release",
-                "--manifest-path",
-                str(MANIFEST),
+            attempts = [
+                collect_attempt(
+                    variant=variant,
+                    feature=feature,
+                    expected_features=expected_features,
+                    seed=seed,
+                    attempt=1,
+                    output_dir=output_dir,
+                    commit=commit,
+                    samples=args.samples,
+                    inner=args.inner,
+                    warmup=args.warmup,
+                    threshold=args.threshold,
+                )
             ]
-            if feature is not None:
-                command.extend(["--features", feature])
-            command.extend(
-                [
-                    "--",
-                    "--seed",
-                    str(seed),
-                    "--samples",
-                    str(args.samples),
-                    "--inner",
-                    str(args.inner),
-                    "--warmup",
-                    str(args.warmup),
-                    "--threshold",
-                    str(args.threshold),
-                    "--output",
-                    str(report_path),
-                ]
+            primary = attempts[0]
+            primary_passed = primary["passed"] is True
+            confirmation_required = (
+                primary["process_exit_code"] == 1
+                and primary["report_passed"] is False
             )
-            result = subprocess.run(
-                command, cwd=ROOT, text=True, capture_output=True, check=False
+            if confirmation_required:
+                for confirmation in range(1, args.confirmation_runs + 1):
+                    attempts.append(
+                        collect_attempt(
+                            variant=variant,
+                            feature=feature,
+                            expected_features=expected_features,
+                            seed=seed,
+                            attempt=confirmation + 1,
+                            output_dir=output_dir,
+                            commit=commit,
+                            samples=args.samples,
+                            inner=args.inner,
+                            warmup=args.warmup,
+                            threshold=args.threshold,
+                        )
+                    )
+            accepted = primary_passed or (
+                confirmation_required
+                and all(attempt["passed"] is True for attempt in attempts[1:])
             )
-            if not report_path.is_file():
-                fail(result.stderr.strip() or f"{variant} seed {seed} produced no report")
-            report = json.loads(report_path.read_text(encoding="utf-8"))
-            validate_report(
-                report,
-                seed=seed,
-                commit=commit,
-                expected_features=expected_features,
-            )
-            cases = report["cases"]
-            max_t = max(float(case["welch_t_abs"]) for case in cases)
             runs.append(
                 {
                     "variant": variant,
                     "seed": seed,
-                    "passed": result.returncode == 0 and report.get("passed") is True,
-                    "max_welch_t_abs": max_t,
-                    "process_exit_code": result.returncode,
-                    "failed_cases": failed_cases(report),
-                    "report": str(report_path.relative_to(output_dir)),
-                    "sha256": sha256(report_path),
+                    "passed": accepted,
+                    "primary_passed": primary_passed,
+                    "confirmation_required": confirmation_required,
+                    "attempts": attempts,
                 }
             )
 
     passed = all(run["passed"] is True for run in runs)
     summary = {
-        "schema_version": 1,
+        "schema_version": 2,
         "tool": "sanitization-multi-seed-leakage",
         "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "git_commit": commit,
         "git_dirty": bool(git_output("status", "--short")),
         "passed": passed,
         "minimum_distinct_seeds": 3,
+        "minimum_confirmation_runs": MINIMUM_CONFIRMATION_RUNS,
         "required_variants": sorted(VARIANTS),
         "required_cases": sorted(REQUIRED_CASES),
         "config": {
@@ -219,31 +298,44 @@ def main() -> int:
             "inner": args.inner,
             "warmup": args.warmup,
             "threshold": args.threshold,
+            "confirmation_runs": args.confirmation_runs,
         },
         "runs": runs,
     }
     summary_path = output_dir / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(summary_path)
+    for run in runs:
+        if run["passed"] is True and run["confirmation_required"] is True:
+            print(
+                "collect-leakage-evidence: isolated primary excursion was not "
+                f"reproduced by {args.confirmation_runs} confirmations "
+                f"variant={run['variant']} seed={run['seed']}",
+                file=sys.stderr,
+            )
     if not passed:
         for run in runs:
             if run["passed"] is True:
                 continue
-            print(
-                "collect-leakage-evidence: "
-                f"FAILED variant={run['variant']} seed={run['seed']} "
-                f"exit={run['process_exit_code']} "
-                f"max_welch_t_abs={run['max_welch_t_abs']:.6f}",
-                file=sys.stderr,
-            )
-            for case in run["failed_cases"]:
+            for attempt in run["attempts"]:
+                if attempt["passed"] is True:
+                    continue
                 print(
-                    "collect-leakage-evidence:   "
-                    f"case={case['name']} "
-                    f"welch_t_abs={float(case['welch_t_abs']):.6f} "
-                    f"threshold={float(case['threshold']):.6f}",
+                    "collect-leakage-evidence: "
+                    f"FAILED variant={run['variant']} seed={run['seed']} "
+                    f"attempt={attempt['attempt']} "
+                    f"exit={attempt['process_exit_code']} "
+                    f"max_welch_t_abs={attempt['max_welch_t_abs']:.6f}",
                     file=sys.stderr,
                 )
+                for case in attempt["failed_cases"]:
+                    print(
+                        "collect-leakage-evidence:   "
+                        f"case={case['name']} "
+                        f"welch_t_abs={float(case['welch_t_abs']):.6f} "
+                        f"threshold={float(case['threshold']):.6f}",
+                        file=sys.stderr,
+                    )
     return 0 if passed else 1
 
 

@@ -8,9 +8,10 @@ use core::{
 use core::cell::Cell;
 
 use super::{
-    CanaryCorruptedError, ForkPolicy, ProtectionControl, ProtectionError, ProtectionFailure,
-    ProtectionReport, ProtectionRequest, ProtectionState, Requirement, RollbackReport,
-    SecretIntegrityError, SecretPoolReport, SecretPoolSlotId,
+    protection::replacement_request_preserving_established, CanaryCorruptedError, ForkPolicy,
+    ProtectionControl, ProtectionError, ProtectionFailure, ProtectionReport, ProtectionRequest,
+    ProtectionState, Requirement, RollbackReport, SecretIntegrityError, SecretPoolReport,
+    SecretPoolSlotId,
 };
 
 #[cfg(feature = "canary-check")]
@@ -757,7 +758,13 @@ impl<const N: usize> LockedSecretBytes<N> {
     }
 
     fn replacement_zeroed(&self) -> Result<Self, MemoryLockError> {
-        Self::zeroed_with_protection(self.request).map_err(protection_error_as_memory_lock)
+        let request = self.request;
+        let replacement_request =
+            replacement_request_preserving_established(request, &self.report, N);
+        let mut replacement = Self::zeroed_with_protection(replacement_request)
+            .map_err(protection_error_as_memory_lock)?;
+        replacement.request = request;
+        Ok(replacement)
     }
 
     /// Fill a caller-provided destination with a copy of the secret bytes.

@@ -3971,6 +3971,41 @@ fn required_unavailable_protection_fails_before_mapping() {
 }
 
 #[cfg(all(
+    feature = "memory-lock",
+    target_os = "linux",
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+    not(miri)
+))]
+#[test]
+fn locked_growth_preserves_controls_accepted_for_empty_storage() {
+    let request = ProtectionRequest {
+        memory_lock: Requirement::NotRequested,
+        dump_exclusion: Requirement::NotRequested,
+        fork: ForkProtectionRequest::inherit(),
+        guard_pages: Requirement::Preferred,
+        canary: Requirement::NotRequested,
+        cache_policy: Requirement::NotRequested,
+    };
+    let mut secret = LockedSecretVec::with_capacity_with_protection(1, request).unwrap();
+    secret.try_extend_from_slice(&[0xA5]).unwrap();
+    secret.mark_guard_pages_established_for_replacement_test();
+    let original_report = *secret.protection_report();
+
+    let error = secret.try_extend_from_slice(&[0x5A]).unwrap_err();
+
+    assert!(matches!(
+        error,
+        SecretIntegrityError::Operation(MemoryLockError {
+            operation: MemoryLockOperation::Map,
+            ..
+        })
+    ));
+    assert_eq!(secret.try_constant_time_eq(&[0xA5]), Ok(true));
+    assert_eq!(secret.protection_request(), request);
+    assert_eq!(*secret.protection_report(), original_report);
+}
+
+#[cfg(all(
     feature = "guard-pages",
     not(feature = "memory-lock"),
     target_os = "linux",
@@ -3997,6 +4032,43 @@ fn required_lock_failure_rolls_back_guarded_mapping() {
     assert!(error.partial_report.mapped_bytes >= 32);
     assert_eq!(error.rollback.unlock, RollbackState::NotNeeded);
     assert_eq!(error.rollback.unmap, RollbackState::Completed);
+}
+
+#[cfg(all(
+    feature = "guard-pages",
+    not(feature = "memory-lock"),
+    target_os = "linux",
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+    not(miri)
+))]
+#[test]
+fn guarded_growth_preserves_controls_accepted_for_empty_storage() {
+    let request = ProtectionRequest {
+        memory_lock: Requirement::Preferred,
+        dump_exclusion: Requirement::NotRequested,
+        fork: ForkProtectionRequest::inherit(),
+        guard_pages: Requirement::Required,
+        canary: Requirement::NotRequested,
+        cache_policy: Requirement::NotRequested,
+    };
+    let mut secret = GuardedSecretVec::with_capacity_with_protection(1, request).unwrap();
+    secret.try_extend_from_slice(&[0xA5]).unwrap();
+    secret.mark_memory_lock_established_for_replacement_test();
+    let original_report = *secret.protection_report();
+    let growth_bytes = std::vec![0x5A; secret.capacity() + 1];
+
+    let error = secret.try_extend_from_slice(&growth_bytes).unwrap_err();
+
+    assert!(matches!(
+        error,
+        SecretIntegrityError::Operation(GuardPageError {
+            operation: GuardPageOperation::Lock,
+            ..
+        })
+    ));
+    assert_eq!(secret.try_constant_time_eq(&[0xA5]), Ok(true));
+    assert_eq!(secret.protection_request(), request);
+    assert_eq!(*secret.protection_report(), original_report);
 }
 
 #[cfg(all(

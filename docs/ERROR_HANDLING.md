@@ -150,8 +150,14 @@ instead of manually coordinating the feature and request. For example,
 by their respective profile features. Explicit `*_with_protection`
 constructors remain the custom-policy path.
 
-When a request contains `Preferred` controls, inspect the report once after
-construction and retain the resulting application state. The convenience
+When a request contains `Preferred` controls, inspect the report after
+construction and retain the resulting application state. Growth and staged
+replacement preserve that accepted state: a preferred control that was
+established for the current nonempty mapping, or accepted as not applicable
+for empty storage, is required while constructing replacement storage. If it
+cannot be re-established, the operation returns an error and leaves the old
+value, request, and report unchanged. The successful replacement retains the
+caller's original request for future policy evaluation. The convenience
 method `ProtectionReport::satisfies(request)` returns `false` for failed,
 unsupported, or compatibility-only requested controls and treats empty-storage
 `NotApplicable` outcomes as fulfilled. `is_degraded()` provides a request-free

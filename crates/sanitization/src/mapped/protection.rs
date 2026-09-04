@@ -721,6 +721,45 @@ impl ProtectionReport {
     }
 }
 
+/// Derive the effective policy for replacement storage without permitting an
+/// established preferred control to disappear during growth or replacement.
+///
+/// The returned request is used only while constructing the replacement. The
+/// replacement owner retains the caller's original request after construction
+/// so future operations can derive continuity from their then-current report.
+#[cfg(any(feature = "memory-lock", feature = "guard-pages"))]
+pub(crate) const fn replacement_request_preserving_established(
+    mut request: ProtectionRequest,
+    report: &ProtectionReport,
+    next_bytes: usize,
+) -> ProtectionRequest {
+    preserve_control(&mut request.memory_lock, report.memory_lock, next_bytes);
+    preserve_control(
+        &mut request.dump_exclusion,
+        report.dump_exclusion,
+        next_bytes,
+    );
+    preserve_control(&mut request.fork.requirement, report.fork.state, next_bytes);
+    preserve_control(&mut request.guard_pages, report.guard_pages, next_bytes);
+    preserve_control(&mut request.canary, report.canary, next_bytes);
+    preserve_control(&mut request.cache_policy, report.cache_policy, next_bytes);
+    request
+}
+
+#[cfg(any(feature = "memory-lock", feature = "guard-pages"))]
+const fn preserve_control(
+    requirement: &mut Requirement,
+    state: ProtectionState,
+    next_bytes: usize,
+) {
+    if matches!(*requirement, Requirement::Preferred)
+        && (matches!(state, ProtectionState::Established)
+            || (next_bytes != 0 && matches!(state, ProtectionState::NotApplicable)))
+    {
+        *requirement = Requirement::Required;
+    }
+}
+
 const fn mapping_satisfies(state: ProtectionState, empty: bool) -> bool {
     matches!(state, ProtectionState::Established)
         || (empty && matches!(state, ProtectionState::NotApplicable))
@@ -767,6 +806,71 @@ fn unavailable_control(
         Some(control)
     } else {
         None
+    }
+}
+
+#[cfg(all(test, any(feature = "memory-lock", feature = "guard-pages")))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn replacement_requires_previously_established_preferred_controls() {
+        let request = ProtectionRequest {
+            memory_lock: Requirement::Preferred,
+            dump_exclusion: Requirement::Preferred,
+            fork: ForkProtectionRequest::exclude(Requirement::Preferred),
+            guard_pages: Requirement::Preferred,
+            canary: Requirement::Preferred,
+            cache_policy: Requirement::Preferred,
+        };
+        let mut report = ProtectionReport::pending(request, 32, 4096);
+        report.mapping = ProtectionState::Established;
+        report.memory_lock = ProtectionState::Established;
+        report.dump_exclusion = ProtectionState::Established;
+        report.fork.state = ProtectionState::Established;
+        report.guard_pages = ProtectionState::Established;
+        report.canary = ProtectionState::Established;
+        report.cache_policy = ProtectionState::Established;
+
+        let replacement = replacement_request_preserving_established(request, &report, 64);
+
+        assert_eq!(replacement.memory_lock, Requirement::Required);
+        assert_eq!(replacement.dump_exclusion, Requirement::Required);
+        assert_eq!(replacement.fork.requirement, Requirement::Required);
+        assert_eq!(replacement.guard_pages, Requirement::Required);
+        assert_eq!(replacement.canary, Requirement::Required);
+        assert_eq!(replacement.cache_policy, Requirement::Required);
+    }
+
+    #[test]
+    fn replacement_does_not_upgrade_controls_that_were_already_degraded() {
+        let request = ProtectionRequest::wasm_compatibility();
+        let mut report = ProtectionReport::pending(request, 32, 0);
+        report.mapping = ProtectionState::CompatibilityOnly;
+        report.memory_lock = ProtectionState::CompatibilityOnly;
+        report.dump_exclusion = ProtectionState::Unsupported;
+        report.fork.state = ProtectionState::Unsupported;
+
+        assert_eq!(
+            replacement_request_preserving_established(request, &report, 64),
+            request
+        );
+    }
+
+    #[test]
+    fn nonempty_replacement_requires_controls_accepted_for_empty_storage() {
+        let request = ProtectionRequest::wasm_compatibility();
+        let mut report = ProtectionReport::pending(request, 0, 0);
+        report.mapping = ProtectionState::NotApplicable;
+        report.memory_lock = ProtectionState::NotApplicable;
+        report.dump_exclusion = ProtectionState::NotApplicable;
+        report.fork.state = ProtectionState::NotApplicable;
+
+        let replacement = replacement_request_preserving_established(request, &report, 1);
+
+        assert_eq!(replacement.memory_lock, Requirement::Required);
+        assert_eq!(replacement.dump_exclusion, Requirement::Required);
+        assert_eq!(replacement.fork.requirement, Requirement::Required);
     }
 }
 

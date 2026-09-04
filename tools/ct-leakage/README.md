@@ -48,8 +48,11 @@ scripts/collect-leakage-evidence.py \
 ```
 
 The collector uses reproducible seeds, runs both default comparison and
-`strict-compare` variants, hashes each raw report, and fails unless every
-required primitive case passes under at least three distinct seeds.
+`strict-compare` variants, and hashes each raw report. A primary threshold
+excursion is retained and followed by two fresh same-seed confirmations. Both
+confirmations must pass for the excursion to be classified as isolated;
+otherwise the collector fails. This avoids accepting a single noisy sample
+without weakening the configured threshold or retrying indefinitely.
 
 For high-assurance release evidence, collect output on each target machine and
 attach it to the release candidate or pentest handoff. Record CPU isolation,

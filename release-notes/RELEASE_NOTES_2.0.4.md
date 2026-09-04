@@ -10,8 +10,15 @@ without changing the public API or the Rust `1.90.0` MSRV.
 - `syn` is updated to `3.0.4` and BLAKE3 to `1.8.7`; compatible transitive
   dependencies and standalone-tool lockfiles are refreshed.
 - The SHA-pinned `Swatinem/rust-cache` action is updated to `2.9.2`. The
-  repository's checkout, artifact upload, and Kani action pins were reviewed
-  and remain current.
+  repository now pins the signed commit referenced by the annotated release
+  tag. Checkout, artifact upload, and Kani action pins were reviewed and remain
+  current.
+- Mapped growth and staged replacement preserve established preferred
+  controls. If a control accepted for the current storage cannot be
+  re-established, replacement fails before the old value or report changes.
+- Multi-seed timing evidence retains an isolated primary excursion and requires
+  two fresh same-seed confirmations to pass. A repeated excursion remains
+  release-blocking, and the Welch threshold is unchanged.
 - The performance baseline keeps detailed measurements in its structured JSON
   artifact but no longer prints the complete report to CI logs. Console output
   now contains only a fixed pass/fail status, resolving the CodeQL

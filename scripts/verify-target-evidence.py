@@ -123,7 +123,7 @@ def verify_manifest(path: Path, expected_commit: str) -> None:
 
 def verify_leakage(path: Path, expected_commit: str) -> None:
     summary = load(path)
-    if summary.get("schema_version") != 1 or summary.get("tool") != "sanitization-multi-seed-leakage":
+    if summary.get("schema_version") != 2 or summary.get("tool") != "sanitization-multi-seed-leakage":
         fail(f"{path} has the wrong leakage-summary schema")
     if summary.get("passed") is not True or summary.get("git_dirty") is not False:
         fail(f"{path} is not clean passing leakage evidence")
@@ -133,6 +133,17 @@ def verify_leakage(path: Path, expected_commit: str) -> None:
         fail(f"{path} does not require default and strict variants")
     if set(summary.get("required_cases", [])) != REQUIRED_CASES:
         fail(f"{path} does not cover the required primitive cases")
+    if summary.get("minimum_distinct_seeds") != 3:
+        fail(f"{path} has an invalid minimum seed policy")
+    minimum_confirmations = summary.get("minimum_confirmation_runs")
+    config = summary.get("config")
+    if (
+        not isinstance(minimum_confirmations, int)
+        or minimum_confirmations < 2
+        or not isinstance(config, dict)
+        or config.get("confirmation_runs") != minimum_confirmations
+    ):
+        fail(f"{path} has an invalid confirmation policy")
     runs = summary.get("runs")
     if not isinstance(runs, list):
         fail(f"{path} has no leakage runs")
@@ -140,39 +151,98 @@ def verify_leakage(path: Path, expected_commit: str) -> None:
     variants = {run.get("variant") for run in runs if isinstance(run, dict)}
     if variants != REQUIRED_VARIANTS:
         fail(f"{path} contains an unexpected leakage variant")
+    seen_reports: set[Path] = set()
     for variant in REQUIRED_VARIANTS:
         variant_runs = [run for run in runs if isinstance(run, dict) and run.get("variant") == variant]
         seeds = {run.get("seed") for run in variant_runs}
         if len(seeds) < 3 or len(seeds) != len(variant_runs):
             fail(f"{path} requires at least three distinct {variant} seeds")
         for run in variant_runs:
-            if run.get("passed") is not True or not SHA256.fullmatch(str(run.get("sha256", ""))):
-                fail(f"{path} contains a failed or unhashed {variant} run")
-            report_path = path.parent / str(run.get("report", ""))
-            if not report_path.is_file() or digest(report_path) != run["sha256"]:
-                fail(f"{path} report digest mismatch: {report_path}")
-            report = load(report_path)
-            if report.get("passed") is not True or report.get("seed") != run.get("seed"):
-                fail(f"{report_path} result or seed mismatch")
-            verify_timestamp(
-                report.get("generated_at_utc"),
-                path=report_path,
-                field="generated_at_utc",
-            )
-            environment = report.get("environment")
-            if not isinstance(environment, dict) or environment.get("git_commit") != commit:
-                fail(f"{report_path} commit mismatch")
-            for key in ("target", "profile", "rustc", "features", "workflow_run"):
-                if not isinstance(environment.get(key), str) or not environment[key]:
-                    fail(f"{report_path} is missing environment.{key}")
-            cases = report.get("cases", [])
-            names = {
-                case.get("name")
-                for case in cases
-                if isinstance(case, dict)
-            }
-            if names != REQUIRED_CASES or len(cases) != len(REQUIRED_CASES):
-                fail(f"{report_path} case coverage mismatch")
+            if run.get("passed") is not True:
+                fail(f"{path} contains an unaccepted {variant} run")
+            seed = run.get("seed")
+            attempts = run.get("attempts")
+            if not isinstance(seed, int) or not isinstance(attempts, list) or not attempts:
+                fail(f"{path} contains malformed {variant} attempts")
+            attempt_results: list[bool] = []
+            for index, attempt in enumerate(attempts, start=1):
+                if not isinstance(attempt, dict) or attempt.get("attempt") != index:
+                    fail(f"{path} contains unordered {variant} attempts")
+                if not SHA256.fullmatch(str(attempt.get("sha256", ""))):
+                    fail(f"{path} contains an unhashed {variant} attempt")
+                report_path = (path.parent / str(attempt.get("report", ""))).resolve()
+                if not report_path.is_relative_to(path.parent.resolve()):
+                    fail(f"{path} contains an out-of-tree leakage report")
+                if report_path in seen_reports:
+                    fail(f"{path} reuses a leakage report: {report_path}")
+                seen_reports.add(report_path)
+                if not report_path.is_file() or digest(report_path) != attempt["sha256"]:
+                    fail(f"{path} report digest mismatch: {report_path}")
+                report = load(report_path)
+                report_passed = report.get("passed") is True
+                process_exit_code = attempt.get("process_exit_code")
+                attempt_passed = process_exit_code == 0 and report_passed
+                if attempt.get("passed") is not attempt_passed:
+                    fail(f"{report_path} attempt result is inconsistent")
+                if attempt.get("report_passed") is not report_passed:
+                    fail(f"{report_path} report result is inconsistent")
+                attempt_results.append(attempt_passed)
+                if report.get("seed") != seed:
+                    fail(f"{report_path} seed mismatch")
+                verify_timestamp(
+                    report.get("generated_at_utc"),
+                    path=report_path,
+                    field="generated_at_utc",
+                )
+                environment = report.get("environment")
+                if not isinstance(environment, dict) or environment.get("git_commit") != commit:
+                    fail(f"{report_path} commit mismatch")
+                expected_features = (
+                    "asm-compare"
+                    if variant == "default-compare"
+                    else "asm-compare,strict-compare"
+                )
+                if environment.get("features") != expected_features:
+                    fail(f"{report_path} feature mismatch")
+                if report.get("config") != {
+                    "samples": config.get("samples"),
+                    "inner": config.get("inner"),
+                    "warmup": config.get("warmup"),
+                    "threshold": config.get("threshold"),
+                }:
+                    fail(f"{report_path} run configuration mismatch")
+                for key in ("target", "profile", "rustc", "workflow_run"):
+                    if not isinstance(environment.get(key), str) or not environment[key]:
+                        fail(f"{report_path} is missing environment.{key}")
+                cases = report.get("cases", [])
+                names = {
+                    case.get("name")
+                    for case in cases
+                    if isinstance(case, dict)
+                }
+                if names != REQUIRED_CASES or len(cases) != len(REQUIRED_CASES):
+                    fail(f"{report_path} case coverage mismatch")
+
+            primary_passed = attempt_results[0]
+            if run.get("primary_passed") is not primary_passed:
+                fail(f"{path} misstates the {variant} primary result")
+            if run.get("confirmation_required") is not (not primary_passed):
+                fail(f"{path} misstates the {variant} confirmation requirement")
+            if primary_passed:
+                if len(attempt_results) != 1:
+                    fail(f"{path} contains unnecessary {variant} confirmation runs")
+            else:
+                primary = attempts[0]
+                if (
+                    primary.get("process_exit_code") != 1
+                    or primary.get("report_passed") is not False
+                ):
+                    fail(f"{path} confirms a non-threshold {variant} failure")
+                if (
+                    len(attempt_results) != 1 + minimum_confirmations
+                    or not all(attempt_results[1:])
+                ):
+                    fail(f"{path} contains a reproduced {variant} timing excursion")
 
 
 def verify_performance(path: Path, expected_commit: str, allow_dirty: bool) -> None:

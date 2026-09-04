@@ -9,6 +9,14 @@
   standalone-tool lockfiles to current compatible dependency releases.
 - Update the pinned `Swatinem/rust-cache` GitHub Action to `2.9.2`; confirm
   checkout, artifact upload, and Kani actions remain current and SHA-pinned.
+- Pin `rust-cache` to the signed commit referenced by the annotated `v2.9.2`
+  tag rather than the tag object's SHA.
+- Preserve established preferred protection controls across mapped growth and
+  staged replacement. A replacement now fails before committing secret bytes
+  if a previously accepted control cannot be re-established.
+- Retain isolated leakage-test excursions and require two fresh same-seed
+  confirmations to pass without increasing the Welch threshold. Any repeated
+  excursion remains release-blocking evidence.
 - Stop emitting full performance-baseline reports to CI stdout. Structured
   benchmark evidence remains in the requested JSON artifact, while console
   output is restricted to a fixed pass/fail status message.

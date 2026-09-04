@@ -613,15 +613,17 @@ Operations:
 - Canary failure volatile-clears and permanently poisons the guarded owner.
   Reinitializing canary bytes during a later clear does not restore access.
 - `try_replace_from_slice` either clears the current writable region before
-  in-place replacement, or creates a new guarded mapping with the same lock
-  state and clears the old mapping before it is unmapped.
-- Generated replacement creates a new guarded mapping with the same lock state
-  before clearing the old mapping. Fallible generated replacement leaves the
-  old mapping unchanged if setup or generation fails.
+  in-place replacement, or creates a new guarded mapping without permitting a
+  previously established preferred control to downgrade and clears the old
+  mapping before it is unmapped.
+- Generated replacement applies the same protection-continuity rule before
+  clearing the old mapping. Fallible generated replacement leaves the old
+  value, request, and report unchanged if setup or generation fails.
 - Growth allocates a new guarded mapping, copies initialized bytes into it,
   volatile-clears the old writable region, swaps metadata, and lets the old
-  mapping unlock and unmap during drop. Locked mappings grow into locked
-  replacement mappings.
+  mapping unlock and unmap during drop. A control accepted as established (or
+  as not applicable for empty storage) becomes required for the replacement
+  attempt. The successful replacement retains the caller's original request.
 - Drop volatile-clears the full writable region, unlocks locked mappings, and
   then releases the platform mapping.
 

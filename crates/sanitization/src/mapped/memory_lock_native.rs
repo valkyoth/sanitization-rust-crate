@@ -15,10 +15,10 @@ unsafe extern "C" {
 }
 
 use super::{
-    CanaryCorruptedError, ForkPolicy, ForkProtectionRequest, ProtectedSecretFillError,
-    ProtectionControl, ProtectionError, ProtectionFailure, ProtectionReport, ProtectionRequest,
-    ProtectionState, Requirement, RollbackReport, RollbackState, SecretIntegrityError,
-    SecretPoolReport, SecretPoolSlotId,
+    protection::replacement_request_preserving_established, CanaryCorruptedError, ForkPolicy,
+    ForkProtectionRequest, ProtectedSecretFillError, ProtectionControl, ProtectionError,
+    ProtectionFailure, ProtectionReport, ProtectionRequest, ProtectionState, Requirement,
+    RollbackReport, RollbackState, SecretIntegrityError, SecretPoolReport, SecretPoolSlotId,
 };
 
 #[cfg(all(
@@ -1074,7 +1074,13 @@ impl<const N: usize> LockedSecretBytes<N> {
     }
 
     fn replacement_zeroed(&self) -> Result<Self, MemoryLockError> {
-        Self::zeroed_with_protection(self.request).map_err(protection_error_as_memory_lock)
+        let request = self.request;
+        let replacement_request =
+            replacement_request_preserving_established(request, &self.report, N);
+        let mut replacement = Self::zeroed_with_protection(replacement_request)
+            .map_err(protection_error_as_memory_lock)?;
+        replacement.request = request;
+        Ok(replacement)
     }
 
     /// Fill a caller-provided destination with a copy of the secret bytes.
@@ -2070,6 +2076,11 @@ impl LockedSecretVec {
         self.request
     }
 
+    #[cfg(all(test, target_os = "linux"))]
+    pub(crate) fn mark_guard_pages_established_for_replacement_test(&mut self) {
+        self.report.guard_pages = ProtectionState::Established;
+    }
+
     /// Returns true when the pool mapping is locked against ordinary paging.
     #[must_use]
     #[inline]
@@ -2383,8 +2394,13 @@ impl LockedSecretVec {
     }
 
     fn replacement_with_capacity(&self, capacity: usize) -> Result<Self, MemoryLockError> {
-        Self::with_capacity_with_protection(capacity, self.request)
-            .map_err(protection_error_as_memory_lock)
+        let request = self.request;
+        let replacement_request =
+            replacement_request_preserving_established(request, &self.report, capacity);
+        let mut replacement = Self::with_capacity_with_protection(capacity, replacement_request)
+            .map_err(protection_error_as_memory_lock)?;
+        replacement.request = request;
+        Ok(replacement)
     }
 
     fn fill_from_fn(&mut self, len: usize, make_byte: &mut impl FnMut(usize) -> u8) {

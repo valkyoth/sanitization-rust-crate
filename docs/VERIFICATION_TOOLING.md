@@ -111,9 +111,11 @@ and rejects dirty, failed, mismatched, unhashed, or incomplete evidence.
 
 `scripts/collect-leakage-evidence.py` requires at least three distinct seeds
 for both the default and strict-comparison variants. Every raw report is
-hashed into its summary. This provides repeated target-specific attempts to
-falsify the data-oblivious claim; it does not convert statistical evidence
-into a universal timing guarantee.
+hashed into its summary. A failed primary run triggers exactly two fresh
+same-seed confirmations; the original failure remains in the evidence, and
+both confirmations must pass or the gate fails. This provides repeated
+target-specific attempts to falsify the data-oblivious claim; it does not
+convert statistical evidence into a universal timing guarantee.
 
 `tools/performance-baseline` uses relative thresholds rather than absolute
 nanosecond limits. It detects pathological large-wipe scaling and ensures the
