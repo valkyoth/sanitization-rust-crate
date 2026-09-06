@@ -81,6 +81,8 @@ if secrecy_features.get("zeroize-interop") != ["dep:zeroize"]:
     fail("sanitization-secrecy zeroize compatibility wiring changed")
 if secrecy_features.get("serde") != ["dep:serde"]:
     fail("sanitization-secrecy plaintext serde must remain separately opt-in")
+if secrecy_features.get("serde-compat-unbounded") != ["serde"]:
+    fail("sanitization-secrecy generic unbounded serde must remain explicitly opt-in")
 
 for profile, expected in EXPECTED_PROFILES.items():
     if features.get(profile) != expected:

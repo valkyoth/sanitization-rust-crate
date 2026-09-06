@@ -1702,6 +1702,13 @@ impl ConstantTimeEq for [u8] {
     }
 }
 
+impl ConstantTimeEq for str {
+    #[inline]
+    fn ct_eq(&self, other: &Self) -> Choice {
+        eq_public_len(self.as_bytes(), other.as_bytes())
+    }
+}
+
 impl<const N: usize> ConditionallySelectable for [u8; N] {
     #[inline]
     fn conditional_select(left: &Self, right: &Self, choice: Choice) -> Self {

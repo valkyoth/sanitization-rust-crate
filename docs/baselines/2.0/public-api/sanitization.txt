@@ -328,6 +328,9 @@ pub fn sanitization::SecretString::ct_ne(&self, &Rhs) -> sanitization::ct::Choic
 impl sanitization::ct::ConstantTimeEq for sanitization::SecretVec
 pub fn sanitization::SecretVec::ct_eq(&self, &Self) -> sanitization::ct::Choice
 pub fn sanitization::SecretVec::ct_ne(&self, &Rhs) -> sanitization::ct::Choice
+impl sanitization::ct::ConstantTimeEq for str
+pub fn str::ct_eq(&self, &Self) -> sanitization::ct::Choice
+pub fn str::ct_ne(&self, &Rhs) -> sanitization::ct::Choice
 impl sanitization::ct::ConstantTimeEq for u128
 pub fn u128::ct_eq(&self, &Self) -> sanitization::ct::Choice
 pub fn u128::ct_ne(&self, &Rhs) -> sanitization::ct::Choice

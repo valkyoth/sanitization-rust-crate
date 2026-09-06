@@ -23,7 +23,9 @@ clearing-owner = "sanitization"
 
 [features]
 default = ["zeroize-interop"]
+hazmat-unrestricted-exposure = []
 serde = ["dep:serde"]
+serde-compat-unbounded = ["serde"]
 zeroize-interop = ["dep:zeroize"]
 
 [dependencies]

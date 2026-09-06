@@ -3,8 +3,8 @@
   "packages": {
     "sanitization": {
       "file": "sanitization.txt",
-      "lines": 2281,
-      "sha256": "7fc4a5b3160caa4fdf6ea606067eb376c881ece72bea4eefcbfbb39fda732518"
+      "lines": 2284,
+      "sha256": "232b675763d1c86aaf256a6222486caed786da1eac5c638471ab10478a6733d8"
     },
     "sanitization-arrayvec": {
       "file": "sanitization-arrayvec.txt",
@@ -28,8 +28,8 @@
     },
     "sanitization-secrecy": {
       "file": "sanitization-secrecy.txt",
-      "lines": 59,
-      "sha256": "542238a2dc2af31188339543f608744f13b5b55cce6f16742f249795e883c928"
+      "lines": 145,
+      "sha256": "69a2f9207ced7462ca52f1ce976b842369aa8c2195053c4a7e05502c28fc1bd5"
     }
   },
   "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",

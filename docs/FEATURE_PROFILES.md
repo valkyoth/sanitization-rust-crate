@@ -123,7 +123,12 @@ The crypto-interop companion explicitly forwards the dependency-free
 helpers; its `strict-compare` feature remains the fail-closed profile.
 The secrecy compatibility companion enables `zeroize-interop` by default only
 to preserve familiar trait imports; its `Zeroize` implementation calls the
-same `SecureSanitize` cleanup path. Plaintext Serde remains separately opt-in.
+same `SecureSanitize` cleanup path. `SecretBox` reference exposure and mutable
+initialization always require stable-storage contracts. The companion's
+`hazmat-unrestricted-exposure` feature adds the separately named
+`UnrestrictedSecretBox` solely for legacy source migration; feature unification
+cannot change existing `SecretBox` implementations. The newtype must not be
+treated as a hardened profile. Plaintext Serde remains separately opt-in.
 The proc-macro crate intentionally does not depend on the runtime crate.
 Conversely, the runtime's optional `sanitization-derive` dependency is pinned
 to the exact same release. Generated code may reference runtime APIs introduced

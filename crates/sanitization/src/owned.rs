@@ -706,8 +706,7 @@ impl<T: SecureSanitize> SecureSanitize for Vec<T> {
 impl SecureSanitize for String {
     #[inline(never)]
     fn secure_sanitize(&mut self) {
-        wipe_backend::erase(self.as_mut_ptr(), self.capacity());
-        self.clear();
+        crate::wipe::string(self);
     }
 }
 

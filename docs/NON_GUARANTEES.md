@@ -144,12 +144,38 @@ containers, use in-place APIs, keep exposure closures small, and avoid passing
 secret material through ordinary temporary arrays, strings, or vectors.
 
 `sanitization-secrecy` is a migration compatibility layer, not a hardened
-storage profile. Its exposure traits return ordinary references, cloning
+storage profile. Its exposure traits return ordinary references; `SecretBox`
+implementations always require stable-storage contracts but cannot prevent
+deliberate copying or export. The `hazmat-unrestricted-exposure` feature adds a
+separate `UnrestrictedSecretBox` on which safe operations may release uncleared
+historical storage; it never weakens `SecretBox` through feature unification. Cloning
 creates another secret owner, and opted-in plaintext serialization creates
-serializer-managed copies. Standard `Vec`/`String` to boxed conversions may
-discard excess capacity through allocator behavior the companion cannot later
-sanitize. Use native `sanitization` byte/text or mapped containers when storage
-history, scoped exposure, permanent bounds, or OS protection is required.
+serializer-managed copies. Companion-owned `Vec`/`String` conversions clear
+their source allocation before release, but cannot recover allocations already
+released during earlier parsing, growth, cloning, or caller-controlled
+mutation. Use native `sanitization` byte/text or mapped containers when full
+managed storage history, scoped exposure, permanent bounds, or OS protection
+is required.
+
+With its `serde` feature, the companion rejects `SecretString` values above
+the core crate's 1 MiB default ceiling. This visitor-time check does not bound
+transport or parser allocations. Generic `SecretBox<T>` deserialization has no
+universal size policy and is exposed only by the deliberately named
+`serde-compat-unbounded` feature.
+
+`SecretSlice::<u8>::try_init_with_len` reports allocator refusal but does not
+impose an application size policy. Use
+`try_init_with_len_bounded::<MAX, _>` for untrusted public lengths. The
+infallible `init_with_len` may invoke the allocation error handler and is only
+for trusted, already-bounded lengths. A non-exact logical capacity returned by
+the allocator is rejected before the initialization callback receives storage.
+
+`CloneableSecret` remains an explicit contract for custom types. Automatic
+array authorization is limited to reviewed integer arrays because `Copy` alone
+does not prove that a manually implemented `Clone` cannot panic. Completed
+slice clones are sanitized by an initialized-prefix guard, but secret-bearing
+partial state that a custom clone creates and abandons before returning remains
+the implementor's responsibility.
 
 Direct mapped initialization avoids a source-level temporary owned by the API,
 but it does not guarantee that a decoder, RNG, KDF, compiler, or calling

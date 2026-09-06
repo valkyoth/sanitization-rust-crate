@@ -1,16 +1,48 @@
 pub mod sanitization_secrecy
 pub use sanitization_secrecy::zeroize
+pub enum sanitization_secrecy::SecretSliceAllocationError
+pub sanitization_secrecy::SecretSliceAllocationError::Allocation(alloc::collections::TryReserveError)
+pub sanitization_secrecy::SecretSliceAllocationError::NonExactCapacity
+pub sanitization_secrecy::SecretSliceAllocationError::NonExactCapacity::actual: usize
+pub sanitization_secrecy::SecretSliceAllocationError::NonExactCapacity::requested: usize
+pub sanitization_secrecy::SecretSliceAllocationError::TooLong
+pub sanitization_secrecy::SecretSliceAllocationError::TooLong::actual: usize
+pub sanitization_secrecy::SecretSliceAllocationError::TooLong::maximum: usize
+impl core::error::Error for sanitization_secrecy::SecretSliceAllocationError
+pub fn sanitization_secrecy::SecretSliceAllocationError::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
+impl core::fmt::Display for sanitization_secrecy::SecretSliceAllocationError
+pub fn sanitization_secrecy::SecretSliceAllocationError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<E> core::convert::From<sanitization_secrecy::SecretSliceAllocationError> for sanitization_secrecy::SecretSliceInitError<E>
+pub fn sanitization_secrecy::SecretSliceInitError<E>::from(sanitization_secrecy::SecretSliceAllocationError) -> Self
+pub enum sanitization_secrecy::SecretSliceInitError<E>
+pub sanitization_secrecy::SecretSliceInitError::Build(sanitization_secrecy::SecretSliceAllocationError)
+pub sanitization_secrecy::SecretSliceInitError::Initialize(E)
+impl<E: core::fmt::Display> core::fmt::Display for sanitization_secrecy::SecretSliceInitError<E>
+pub fn sanitization_secrecy::SecretSliceInitError<E>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<E> core::convert::From<sanitization_secrecy::SecretSliceAllocationError> for sanitization_secrecy::SecretSliceInitError<E>
+pub fn sanitization_secrecy::SecretSliceInitError<E>::from(sanitization_secrecy::SecretSliceAllocationError) -> Self
+impl<E> core::error::Error for sanitization_secrecy::SecretSliceInitError<E> where E: core::error::Error + 'static
+pub fn sanitization_secrecy::SecretSliceInitError<E>::source(&self) -> core::option::Option<&(dyn core::error::Error + 'static)>
 pub struct sanitization_secrecy::SecretBox<S: sanitization::owned::SecureSanitize + ?core::marker::Sized>
+impl sanitization_secrecy::SecretBox<[u8]>
+pub fn sanitization_secrecy::SecretBox<[u8]>::init_with_len(usize, impl core::ops::function::FnOnce(&mut [u8])) -> Self
+pub fn sanitization_secrecy::SecretBox<[u8]>::try_init_with_len<E>(usize, impl core::ops::function::FnOnce(&mut [u8]) -> core::result::Result<(), E>) -> core::result::Result<Self, sanitization_secrecy::SecretSliceInitError<E>>
+pub fn sanitization_secrecy::SecretBox<[u8]>::try_init_with_len_bounded<const MAX: usize, E>(usize, impl core::ops::function::FnOnce(&mut [u8]) -> core::result::Result<(), E>) -> core::result::Result<Self, sanitization_secrecy::SecretSliceInitError<E>>
 impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::clear_secret(&mut self)
 pub fn sanitization_secrecy::SecretBox<S>::into_cleared(self)
 pub const fn sanitization_secrecy::SecretBox<S>::new(alloc::boxed::Box<S>) -> Self
-impl<S: sanitization::owned::SecureSanitize + core::clone::Clone> sanitization_secrecy::SecretBox<S>
+impl<S: sanitization::owned::SecureSanitize + sanitization::ct::ConstantTimeEq + ?core::marker::Sized> sanitization_secrecy::SecretBox<S>
+pub fn sanitization_secrecy::SecretBox<S>::ct_eq(&self, &Self) -> sanitization::ct::Choice
+impl<S: sanitization::owned::SecureSanitize> sanitization_secrecy::SecretBox<[S]>
+pub fn sanitization_secrecy::SecretBox<[S]>::try_from_vec_exact(alloc::vec::Vec<S>) -> core::result::Result<Self, sanitization_secrecy::SecretSliceCapacityError>
+impl<S: sanitization::owned::StableMutableSecretStorage + core::default::Default> sanitization_secrecy::SecretBox<S>
+pub fn sanitization_secrecy::SecretBox<S>::init_with_mut(impl core::ops::function::FnOnce(&mut S)) -> Self
+pub fn sanitization_secrecy::SecretBox<S>::try_init_with_mut<E>(impl core::ops::function::FnOnce(&mut S) -> core::result::Result<(), E>) -> core::result::Result<Self, E>
+impl<S: sanitization_secrecy::CloneableSecret> sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::init_with(impl core::ops::function::FnOnce() -> S) -> Self
 pub fn sanitization_secrecy::SecretBox<S>::try_init_with<E>(impl core::ops::function::FnOnce() -> core::result::Result<S, E>) -> core::result::Result<Self, E>
-impl<S: sanitization::owned::SecureSanitize + core::default::Default> sanitization_secrecy::SecretBox<S>
-pub fn sanitization_secrecy::SecretBox<S>::init_with_mut(impl core::ops::function::FnOnce(&mut S)) -> Self
-impl<'de, T> serde_core::de::Deserialize<'de> for sanitization_secrecy::SecretBox<T> where T: sanitization::owned::SecureSanitize + core::clone::Clone + serde_core::de::DeserializeOwned + core::marker::Sized
+impl<'de, T> serde_core::de::Deserialize<'de> for sanitization_secrecy::SecretBox<T> where T: sanitization_secrecy::CloneableSecret + serde_core::de::DeserializeOwned + core::marker::Sized
 pub fn sanitization_secrecy::SecretBox<T>::deserialize<D>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error> where D: serde_core::de::Deserializer<'de>
 impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> core::convert::From<alloc::boxed::Box<S>> for sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::from(alloc::boxed::Box<S>) -> Self
@@ -20,20 +52,58 @@ impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> core::ops::d
 pub fn sanitization_secrecy::SecretBox<S>::drop(&mut self)
 impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization::owned::SecureSanitize for sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::secure_sanitize(&mut self)
-impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecret<S> for sanitization_secrecy::SecretBox<S>
-pub fn sanitization_secrecy::SecretBox<S>::expose_secret(&self) -> &S
-impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecretMut<S> for sanitization_secrecy::SecretBox<S>
-pub fn sanitization_secrecy::SecretBox<S>::expose_secret_mut(&mut self) -> &mut S
 impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> zeroize::Zeroize for sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::zeroize(&mut self)
 impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> zeroize::ZeroizeOnDrop for sanitization_secrecy::SecretBox<S>
 impl<S: sanitization::owned::SecureSanitize + core::default::Default> core::default::Default for sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::default() -> Self
+impl<S: sanitization::owned::StableMutableSecretStorage + ?core::marker::Sized> sanitization_secrecy::ExposeSecretMut<S> for sanitization_secrecy::SecretBox<S>
+pub fn sanitization_secrecy::SecretBox<S>::expose_secret_mut(&mut self) -> &mut S
+impl<S: sanitization::owned::StableSharedSecretStorage + ?core::marker::Sized> sanitization_secrecy::ExposeSecret<S> for sanitization_secrecy::SecretBox<S>
+pub fn sanitization_secrecy::SecretBox<S>::expose_secret(&self) -> &S
 impl<S: sanitization_secrecy::CloneableSecret> core::clone::Clone for sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::clone(&self) -> Self
-impl<T> serde_core::ser::Serialize for sanitization_secrecy::SecretBox<T> where T: sanitization::owned::SecureSanitize + sanitization_secrecy::SerializableSecret + serde_core::ser::Serialize + core::marker::Sized
+impl<T> serde_core::ser::Serialize for sanitization_secrecy::SecretBox<T> where T: sanitization::owned::StableSharedSecretStorage + sanitization_secrecy::SerializableSecret + serde_core::ser::Serialize + core::marker::Sized
 pub fn sanitization_secrecy::SecretBox<T>::serialize<S>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error> where S: serde_core::ser::Serializer
+pub struct sanitization_secrecy::SecretSliceCapacityError
+pub sanitization_secrecy::SecretSliceCapacityError::capacity: usize
+pub sanitization_secrecy::SecretSliceCapacityError::length: usize
+impl core::fmt::Display for sanitization_secrecy::SecretSliceCapacityError
+pub fn sanitization_secrecy::SecretSliceCapacityError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct sanitization_secrecy::UnrestrictedSecretBox<S: sanitization::owned::SecureSanitize + ?core::marker::Sized>
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::clear_secret(&mut self)
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::into_cleared(self)
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::into_restricted(self) -> sanitization_secrecy::SecretBox<S>
+pub const fn sanitization_secrecy::UnrestrictedSecretBox<S>::new(alloc::boxed::Box<S>) -> Self
+impl<S: sanitization::owned::SecureSanitize + core::default::Default> sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::init_with_mut(impl core::ops::function::FnOnce(&mut S)) -> Self
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::try_init_with_mut<E>(impl core::ops::function::FnOnce(&mut S) -> core::result::Result<(), E>) -> core::result::Result<Self, E>
+impl<S: sanitization::owned::SecureSanitize + sanitization::ct::ConstantTimeEq + ?core::marker::Sized> sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::ct_eq(&self, &Self) -> sanitization::ct::Choice
+impl<'de, T> serde_core::de::Deserialize<'de> for sanitization_secrecy::UnrestrictedSecretBox<T> where T: sanitization_secrecy::CloneableSecret + serde_core::de::DeserializeOwned + core::marker::Sized
+pub fn sanitization_secrecy::UnrestrictedSecretBox<T>::deserialize<D>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error> where D: serde_core::de::Deserializer<'de>
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> core::convert::From<alloc::boxed::Box<S>> for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::from(alloc::boxed::Box<S>) -> Self
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> core::fmt::Debug for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization::owned::SecureSanitize for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::secure_sanitize(&mut self)
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecret<S> for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::expose_secret(&self) -> &S
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecretMut<S> for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::expose_secret_mut(&mut self) -> &mut S
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> zeroize::Zeroize for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::zeroize(&mut self)
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> zeroize::ZeroizeOnDrop for sanitization_secrecy::UnrestrictedSecretBox<S>
+impl<S: sanitization::owned::SecureSanitize + core::default::Default> core::default::Default for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::default() -> Self
+impl<S: sanitization_secrecy::CloneableSecret> core::clone::Clone for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::clone(&self) -> Self
+impl<T> serde_core::ser::Serialize for sanitization_secrecy::UnrestrictedSecretBox<T> where T: sanitization::owned::SecureSanitize + sanitization_secrecy::SerializableSecret + serde_core::ser::Serialize + core::marker::Sized
+pub fn sanitization_secrecy::UnrestrictedSecretBox<T>::serialize<S>(&self, S) -> core::result::Result<<S as serde_core::ser::Serializer>::Ok, <S as serde_core::ser::Serializer>::Error> where S: serde_core::ser::Serializer
 pub trait sanitization_secrecy::CloneableSecret: core::clone::Clone + sanitization::owned::SecureSanitize
+impl sanitization_secrecy::CloneableSecret for alloc::string::String
 impl sanitization_secrecy::CloneableSecret for i128
 impl sanitization_secrecy::CloneableSecret for i16
 impl sanitization_secrecy::CloneableSecret for i32
@@ -46,13 +116,29 @@ impl sanitization_secrecy::CloneableSecret for u32
 impl sanitization_secrecy::CloneableSecret for u64
 impl sanitization_secrecy::CloneableSecret for u8
 impl sanitization_secrecy::CloneableSecret for usize
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [i128; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [i16; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [i32; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [i64; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [i8; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [isize; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [u128; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [u16; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [u32; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [u64; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [u8; N]
+impl<const N: usize> sanitization_secrecy::CloneableSecret for [usize; N]
 pub trait sanitization_secrecy::ExposeSecret<S: ?core::marker::Sized>
 pub fn sanitization_secrecy::ExposeSecret::expose_secret(&self) -> &S
-impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecret<S> for sanitization_secrecy::SecretBox<S>
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecret<S> for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::expose_secret(&self) -> &S
+impl<S: sanitization::owned::StableSharedSecretStorage + ?core::marker::Sized> sanitization_secrecy::ExposeSecret<S> for sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::expose_secret(&self) -> &S
 pub trait sanitization_secrecy::ExposeSecretMut<S: ?core::marker::Sized>
 pub fn sanitization_secrecy::ExposeSecretMut::expose_secret_mut(&mut self) -> &mut S
-impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecretMut<S> for sanitization_secrecy::SecretBox<S>
+impl<S: sanitization::owned::SecureSanitize + ?core::marker::Sized> sanitization_secrecy::ExposeSecretMut<S> for sanitization_secrecy::UnrestrictedSecretBox<S>
+pub fn sanitization_secrecy::UnrestrictedSecretBox<S>::expose_secret_mut(&mut self) -> &mut S
+impl<S: sanitization::owned::StableMutableSecretStorage + ?core::marker::Sized> sanitization_secrecy::ExposeSecretMut<S> for sanitization_secrecy::SecretBox<S>
 pub fn sanitization_secrecy::SecretBox<S>::expose_secret_mut(&mut self) -> &mut S
 pub trait sanitization_secrecy::SerializableSecret: serde_core::ser::Serialize
 pub type sanitization_secrecy::SecretSlice<S> = sanitization_secrecy::SecretBox<[S]>

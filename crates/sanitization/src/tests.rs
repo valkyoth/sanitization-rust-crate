@@ -689,6 +689,12 @@ fn ct_arrays_and_public_len_slices_compare() {
         &[1, 2, 3],
         "test exposes public-length equality result"
     ));
+    assert!("secret text"
+        .ct_eq("secret text")
+        .declassify("test exposes string equality result"));
+    assert!(!"secret text"
+        .ct_eq("different text")
+        .declassify("test exposes string inequality result"));
     assert_eq!(
         ct::declassified_cmp_fixed(&left, &different, "test exposes fixed ordering result"),
         core::cmp::Ordering::Less
@@ -3624,7 +3630,8 @@ fn multi_pass_wipe_clears_slice() {
 #[test]
 fn canonical_wipe_clears_alloc_types_when_enabled() {
     let mut bytes = std::vec![0xBB; 8];
-    let mut text = std::string::String::from("secret");
+    let mut text = std::string::String::with_capacity(64);
+    text.push_str("secret");
 
     crate::wipe::vec(&mut bytes);
     crate::wipe::string(&mut text);
@@ -3639,7 +3646,8 @@ fn multi_pass_wipe_clears_alloc_types_when_enabled() {
     let mut bytes = SecretVec::from_slice(&[1, 2, 3]);
     let mut text = SecretString::from_secret_str("secret");
     let mut ordinary = std::vec![0xBB; 8];
-    let mut ordinary_text = std::string::String::from("secret");
+    let mut ordinary_text = std::string::String::with_capacity(64);
+    ordinary_text.push_str("secret");
 
     bytes.clear_secret_multi_pass();
     text.clear_secret_multi_pass();

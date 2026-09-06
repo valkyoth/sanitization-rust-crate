@@ -84,7 +84,7 @@ capability, not achieved runtime state.
 | `sanitization-arrayvec` | Clear-on-drop `ArrayVec` integration. |
 | `sanitization-bytes` | Fixed-capacity `BytesMut` integration that refuses reallocating growth. |
 | `sanitization-crypto-interop` | Cleanup-aware SHA-2/BLAKE3 wrappers and HMAC-SHA2 helpers; forwards dependency-free `asm-compare` by default. |
-| `sanitization-secrecy` | Compatibility-oriented boxed secrets, exposure traits, controlled cloning, and optional plaintext Serde. |
+| `sanitization-secrecy` | Compatibility-oriented boxed secrets, permanently stable-storage-gated `SecretBox` exposure, controlled cloning, bounded runtime slice initialization, bounded-by-default string Serde, explicit unbounded generic Serde compatibility, and a `hazmat-unrestricted-exposure` feature that adds a distinct reduced-assurance newtype without weakening existing types. |
 
 Companion crates reuse the core clearing boundary rather than defining a second
 volatile wipe implementation.

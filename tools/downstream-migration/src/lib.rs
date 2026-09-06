@@ -52,14 +52,13 @@ mod tests {
         ConstantTimeEq as CtConstantTimeEq,
     };
     use sanitization::{
-        AllowlistedSecret, ConditionallySelectable, ConstantTimeEq, ProtectionRequest,
-        Requirement,
+        AllowlistedSecret, ConditionallySelectable, ConstantTimeEq, ProtectionRequest, Requirement,
     };
     use sanitization_arrayvec::SecretArrayVec;
     use sanitization_bytes::SecretBytesMut;
     use sanitization_crypto_interop::{blake3, hmac_sha2, sha2};
-    use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretSlice, SecretString};
     use secrecy::zeroize::Zeroize;
+    use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretSlice, SecretString};
 
     #[derive(Clone, Copy, ConstantTimeEq, ConditionallySelectable)]
     struct Tag {
@@ -79,10 +78,9 @@ mod tests {
 
     #[test]
     fn generic_storage_contract_and_derive_work_downstream() {
-        let mut secret =
-            AllowlistedSecret::<FixedCredentials, MigrationStoragePolicy>::new(
-                FixedCredentials::new([7; 32], next_fixture_nonce(), 0x0304),
-            );
+        let mut secret = AllowlistedSecret::<FixedCredentials, MigrationStoragePolicy>::new(
+            FixedCredentials::new([7; 32], next_fixture_nonce(), 0x0304),
+        );
         assert_eq!(secret.with_secret(FixedCredentials::protocol), 0x0304);
         secret.with_secret_mut(|credentials| credentials.nonce[0] = 3);
         assert_eq!(secret.with_secret(|credentials| credentials.nonce[0]), 3);
@@ -161,6 +159,13 @@ mod tests {
 
         let bytes = SecretSlice::from(vec![1_u8, 2, 3, 4]);
         assert_eq!(bytes.expose_secret(), &[1, 2, 3, 4]);
+
+        let expected = SecretSlice::<u8>::init_with_len(4, |output| {
+            output.copy_from_slice(&[1, 2, 3, 4]);
+        });
+        assert!(bytes
+            .ct_eq(&expected)
+            .declassify("migration fixture byte equality is public"));
 
         let fixed = SecretBox::<[u8; 4]>::init_with_mut(|output| {
             output.copy_from_slice(b"test");

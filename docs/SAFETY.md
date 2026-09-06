@@ -216,21 +216,58 @@ Invariant:
 
 ### `sanitization-secrecy` compatibility boundary
 
-The `sanitization-secrecy` companion contains no unsafe code and delegates
-cleanup of its current boxed value to `SecureSanitize`. Its optional `Zeroize`
-implementation calls that same path rather than defining another wipe
-primitive.
+The `sanitization-secrecy` companion delegates cleanup of its current boxed
+value to `SecureSanitize`. Its optional `Zeroize` implementation calls that
+same path rather than defining another wipe primitive. One narrowly scoped
+unsafe builder allocates the exact final boxed slice and tracks its initialized
+prefix so completed clones can be sanitized if a later clone unwinds.
 
 This companion deliberately does not inherit the stronger native-container
-claims. `ExposeSecret` and `ExposeSecretMut` return references; code reached
-through those references can copy values or replace internal allocations.
+claims. `ExposeSecret` and `ExposeSecretMut` return references, but their
+`SecretBox` implementations always require the corresponding shared or mutable
+stable-storage contract. Code reached through those references can still
+deliberately copy or export values. The explicit
+`hazmat-unrestricted-exposure` feature adds a separate
+`UnrestrictedSecretBox`; it does not alter `SecretBox`. Safe operations reached
+through the newtype may replace or release uncleared internal allocations.
 `CloneableSecret` authorizes an additional owned copy, and
 `SerializableSecret` authorizes plaintext output into serializer-controlled
-storage. Conversion from an existing `Vec` or `String` follows standard-library
-boxed conversion semantics and cannot recover allocations or copies released
-before final boxed ownership is established.
+storage. Owned `String` conversion copies into final boxed storage while a
+sanitizing guard retains and then clears the complete source capacity.
+`From<Vec<S>>` applies the same guarded strategy and requires
+`CloneableSecret`; completed destination elements remain in a sanitizing guard
+until the exact boxed slice is complete, including during unwinding. The
+builder does not rely on `Vec::with_capacity` returning exactly the requested
+logical capacity. Exact-capacity vectors can instead transfer ownership through
+`try_from_vec_exact`; excess-capacity inputs are cleared and rejected before
+standard-library boxing can discard storage. Runtime byte-slice construction
+uses `try_reserve_exact`, rejects a non-exact logical capacity before secret
+initialization, and provides a const-bounded form that rejects excessive public
+lengths before allocation. None of these paths can recover allocations or
+copies released before companion-owned construction. Partial state created
+inside an arbitrary panicking `S::clone()` remains the `CloneableSecret`
+implementor's responsibility.
 
 ## Unsafe Operations
+
+### `PendingCloneSlice` initialization
+
+Location: `sanitization-secrecy::PendingCloneSlice`
+
+Purpose: clone directly into an exact-length `Box<[MaybeUninit<S>]>` without a
+secret-bearing excess-capacity `Vec` or an allocator-dependent capacity
+assertion.
+
+Invariant:
+
+- `initialized` counts one consecutive prefix beginning at index zero.
+- The counter advances only after `MaybeUninit::write` completes.
+- On unwind, only that initialized prefix is converted to `&mut S`, sanitized,
+  and dropped exactly once.
+- On success, a mandatory assertion confirms every slot is initialized before
+  taking the storage disables the cleanup guard and conversion to `Box<[S]>`.
+- A panic inside a custom `S::clone()` before it returns remains governed by
+  the documented `CloneableSecret` implementor contract.
 
 ### `ptr::write_volatile`
 
@@ -260,22 +297,28 @@ Invariant:
   best-effort WASM mitigation, not a WASM specification-level volatile
   guarantee.
 
-### `String::as_mut_ptr`
+### `String::as_mut_vec`
 
-Location: `wipe::string`
+Location: `wipe_backend::erase_string` and
+`wipe_backend::erase_string_multi_pass`
 
-Purpose: obtain a raw pointer to the `String` allocation so its full capacity
-can be passed to `wipe_backend::erase` before calling `clear()`.
+Purpose: obtain the underlying vector with allocation-wide provenance so the
+complete `String` capacity can be erased without relying on the initialized
+range provenance of `String::as_mut_ptr`.
 
 Invariant:
 
-- `text.as_mut_ptr()` provides a pointer valid for `text.capacity()` bytes.
-- Every byte in the allocation capacity is overwritten with `0`.
-- `0` is valid UTF-8, so initialized string contents remain valid during and
-  after wiping.
+- `text.as_mut_vec()` is used only while exclusive `&mut String` access is
+  held, and the resulting vector is never exposed.
+- Single-pass clearing overwrites the complete vector allocation with `0`;
+  zero bytes are valid UTF-8, and the resulting vector length is zero.
+- Multi-pass clearing first zeros the initialized UTF-8 bytes, sets the vector
+  length to zero, and only then applies the `0`, `0xFF`, `0` pattern to the
+  complete allocation. The non-UTF-8 middle pass therefore touches only spare
+  capacity while the logical string remains empty.
 - Exclusive `&mut String` access prevents concurrent reads or writes while the
   allocation is wiped.
-- The raw pointer is not exposed to the caller.
+- The underlying vector and raw pointer are not exposed to the caller.
 
 ### Platform memory-lock mappings and mapped-memory references
 

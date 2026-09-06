@@ -91,8 +91,7 @@ pub fn vec_multi_pass(bytes: &mut Vec<u8>) {
 #[cfg(feature = "alloc")]
 #[inline(never)]
 pub fn string(text: &mut String) {
-    crate::wipe_backend::erase(text.as_mut_ptr(), text.capacity());
-    text.clear();
+    crate::wipe_backend::erase_string(text);
 }
 
 /// Clear a `String` allocation's complete capacity with three passes, then set
@@ -100,8 +99,7 @@ pub fn string(text: &mut String) {
 #[cfg(all(feature = "alloc", feature = "multi-pass-clear"))]
 #[inline(never)]
 pub fn string_multi_pass(text: &mut String) {
-    crate::wipe_backend::erase_multi_pass(text.as_mut_ptr(), text.capacity());
-    text.clear();
+    crate::wipe_backend::erase_string_multi_pass(text);
 }
 
 impl sealed::Sealed for [u8] {}

@@ -1,3 +1,5 @@
+#[cfg(feature = "alloc")]
+use alloc::string::String;
 #[cfg(target_arch = "wasm32")]
 use core::hint::black_box;
 use core::{
@@ -90,6 +92,29 @@ pub(crate) fn erase_str(text: &mut str) {
     // invariant, and the mutable borrow provides exclusive access.
     let bytes = unsafe { text.as_bytes_mut() };
     erase(bytes.as_mut_ptr(), bytes.len());
+}
+
+#[cfg(feature = "alloc")]
+#[inline(never)]
+pub(crate) fn erase_string(text: &mut String) {
+    // SAFETY: replacing every initialized byte with ASCII NUL preserves UTF-8.
+    // Treating the String as its underlying Vec provides provenance for the
+    // complete allocation; erasure leaves the vector and String length zero.
+    let bytes = unsafe { text.as_mut_vec() };
+    erase(bytes.as_mut_ptr(), bytes.capacity());
+    bytes.clear();
+}
+
+#[cfg(all(feature = "alloc", feature = "multi-pass-clear"))]
+#[inline(never)]
+pub(crate) fn erase_string_multi_pass(text: &mut String) {
+    // SAFETY: zero the live UTF-8 range before making the String empty. The
+    // 0xFF pass then touches only spare capacity, so no invalid bytes are ever
+    // part of the live String representation.
+    let bytes = unsafe { text.as_mut_vec() };
+    erase(bytes.as_mut_ptr(), bytes.len());
+    bytes.clear();
+    erase_multi_pass(bytes.as_mut_ptr(), bytes.capacity());
 }
 
 #[inline(never)]

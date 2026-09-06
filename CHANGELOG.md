@@ -7,6 +7,33 @@
 - Provide `SecretBox`, `SecretSlice`, `SecretString`, exposure traits,
   controlled cloning, optional plaintext Serde, and default zeroize trait
   compatibility while delegating wrapper cleanup to `SecureSanitize`.
+- Bound compatibility `SecretString` Serde loading to 1 MiB and require the
+  explicit `serde-compat-unbounded` feature for generic `SecretBox<T>` loading.
+- Scrub complete source capacities when converting owned `String` and `Vec`
+  values into boxed compatibility storage, and guard completed slice clones
+  against panic-unwind remanence.
+- Add exact-capacity no-copy slice transfer, fallible in-place initialization,
+  runtime-length final-allocation byte initialization, and data-oblivious
+  comparisons whose `Choice` result requires call-site declassification.
+- Require stable-storage attestations for `SecretBox` compatibility exposure
+  and mutable initialization under every feature combination; the explicit
+  `hazmat-unrestricted-exposure` feature adds a separate
+  `UnrestrictedSecretBox` so feature unification cannot downgrade existing
+  trait implementations.
+- Report runtime byte-slice allocation failures, add const-bounded slice
+  initialization for untrusted lengths, and keep build and callback errors
+  distinct.
+- Replace allocator-dependent slice-clone capacity assertions with exact boxed
+  construction, initialized-prefix unwind cleanup, and a mandatory
+  full-initialization assertion before disarming the guard; restrict automatic
+  array clone authorization to reviewed integer arrays.
+- Avoid duplicate sanitization in `SecretBox::into_cleared` and strengthen the
+  clone opt-in compile-failure test so it checks the intended marker bound.
+- Route full-capacity `String` clearing through allocation-wide vector
+  provenance, with the live UTF-8 length cleared before the `0xFF` phase of an
+  optional multi-pass wipe; excess-capacity paths now pass Miri.
+- Document the intentional `SecretString` clone exception, package-alias type
+  boundary, Serde length policy, and custom clone implementor obligations.
 - Add `SecureSanitize` for `str` through the existing audited wipe backend.
 - Add package-alias migration fixtures and integrate the sixth crate into
   checks, Miri, archive verification, documentation, and release tooling.
