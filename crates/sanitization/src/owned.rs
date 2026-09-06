@@ -664,6 +664,21 @@ impl<T: SecureSanitize + ?Sized> SecureSanitize for Box<T> {
     }
 }
 
+/// In-place sanitization for UTF-8 string slices.
+///
+/// Every byte is replaced with `0`, which remains valid UTF-8. This supports
+/// fixed boxed string storage without allocating or changing its length.
+impl SecureSanitize for str {
+    #[inline]
+    fn secure_sanitize(&mut self) {
+        crate::wipe_backend::erase_str(self);
+    }
+}
+
+impl StableSharedSecretStorage for str {}
+
+impl StableMutableSecretStorage for str {}
+
 #[cfg(feature = "alloc")]
 /// Sanitization for the vector's currently reachable allocation.
 ///

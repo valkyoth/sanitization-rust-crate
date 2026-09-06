@@ -33,6 +33,7 @@ COMPANIONS = {
     "sanitization-arrayvec": "companion",
     "sanitization-bytes": "companion",
     "sanitization-crypto-interop": "companion",
+    "sanitization-secrecy": "companion",
     "sanitization-derive": "proc-macro",
 }
 
@@ -71,6 +72,15 @@ if crypto_features.get("default") != ["asm-compare"]:
     fail("sanitization-crypto-interop must forward asm-compare by default")
 if crypto_features.get("asm-compare") != ["sanitization/asm-compare"]:
     fail("sanitization-crypto-interop asm-compare forwarding changed")
+
+secrecy_compat = load_manifest("sanitization-secrecy")
+secrecy_features = secrecy_compat.get("features", {})
+if secrecy_features.get("default") != ["zeroize-interop"]:
+    fail("sanitization-secrecy default must contain only zeroize-interop")
+if secrecy_features.get("zeroize-interop") != ["dep:zeroize"]:
+    fail("sanitization-secrecy zeroize compatibility wiring changed")
+if secrecy_features.get("serde") != ["dep:serde"]:
+    fail("sanitization-secrecy plaintext serde must remain separately opt-in")
 
 for profile, expected in EXPECTED_PROFILES.items():
     if features.get(profile) != expected:

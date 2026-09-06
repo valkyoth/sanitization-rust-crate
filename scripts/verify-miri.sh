@@ -22,3 +22,4 @@ cargo +"${toolchain}" miri test -p sanitization-bytes
 cargo +"${toolchain}" miri test -p sanitization-crypto-interop \
     --no-default-features \
     --features sha2,blake3,hmac-sha2
+cargo +"${toolchain}" miri test -p sanitization-secrecy --all-features

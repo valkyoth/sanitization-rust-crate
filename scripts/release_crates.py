@@ -17,6 +17,7 @@ Publish order:
 5. sanitization-arrayvec
 6. sanitization-bytes
 7. sanitization-crypto-interop
+8. sanitization-secrecy
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ FINAL_STEPS = (
     "sanitization-arrayvec",
     "sanitization-bytes",
     "sanitization-crypto-interop",
+    "sanitization-secrecy",
 )
 
 ALL_PACKAGES = tuple(name for name, _ in DEPENDENCY_STEPS) + FINAL_STEPS
@@ -411,6 +413,7 @@ def main() -> int:
     print(f"  cargo info sanitization-arrayvec@{args.version}")
     print(f"  cargo info sanitization-bytes@{args.version}")
     print(f"  cargo info sanitization-crypto-interop@{args.version}")
+    print(f"  cargo info sanitization-secrecy@{args.version}")
     return 0
 
 

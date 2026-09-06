@@ -38,6 +38,7 @@ else
 fi
 scripts/verify-dependency-policy.sh
 cargo test -p sanitization-derive
+cargo test -p sanitization-secrecy --all-features
 cargo test
 cargo test --features alloc
 cargo test --features std

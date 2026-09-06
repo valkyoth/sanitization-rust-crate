@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture or verify rustdoc-derived current 2.0 public API snapshots."""
+"""Capture current public APIs against the frozen 2.0 release baseline."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ PACKAGES = (
     "sanitization-arrayvec",
     "sanitization-bytes",
     "sanitization-crypto-interop",
+    "sanitization-secrecy",
 )
 
 

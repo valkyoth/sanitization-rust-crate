@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared source-level API inventory generation for 2.0 verification."""
+"""Shared current API inventory compared with the frozen 2.0 baseline."""
 
 from __future__ import annotations
 

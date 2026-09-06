@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture or verify the current 2.0 source-level public API inventory."""
+"""Capture current source APIs against the frozen 2.0 release baseline."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ if arguments.check:
     recorded = json.loads(output.read_text(encoding="utf-8"))
     if recorded != current:
         fail("current source API inventory is stale; regenerate after reviewed API changes")
-    print("current 2.0 source API inventory verified")
+    print("current source API inventory verified against the 2.0 baseline")
 else:
     output.write_text(
         json.dumps(current, indent=2, sort_keys=True) + "\n", encoding="utf-8"

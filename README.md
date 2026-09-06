@@ -68,6 +68,7 @@ Choose the narrowest type that matches the storage requirement:
 | One successful scoped access | `ConsumeOnceSecret<T>` |
 | Existing ordinary byte storage | `sanitization::wipe` |
 | Existing ecosystem trait bounds | `zeroize-interop`, `subtle-interop`, or a companion crate |
+| Existing `secrecy` 0.10 API usage | `sanitization-secrecy` compatibility companion |
 
 Use the API in three levels:
 
@@ -85,21 +86,21 @@ Fixed-size `no_std` secrets need no feature flags:
 
 ```toml
 [dependencies]
-sanitization = "2.0.4"
+sanitization = "2.1.0"
 ```
 
 Heap-backed byte and text containers:
 
 ```toml
 [dependencies]
-sanitization = { version = "2.0.4", features = ["alloc"] }
+sanitization = { version = "2.1.0", features = ["alloc"] }
 ```
 
 Recommended native hardening profile:
 
 ```toml
 [dependencies]
-sanitization = { version = "2.0.4", features = ["profile-hardened-native"] }
+sanitization = { version = "2.1.0", features = ["profile-hardened-native"] }
 ```
 
 This profile includes OS-random canaries and `strict-canary-check`. Enabling
@@ -110,7 +111,7 @@ Optional derives:
 
 ```toml
 [dependencies]
-sanitization = { version = "2.0.4", features = ["derive"] }
+sanitization = { version = "2.1.0", features = ["derive"] }
 ```
 
 See the complete [feature reference](https://github.com/valkyoth/sanitization/blob/main/docs/FEATURES.md) before combining
@@ -533,6 +534,7 @@ by ownership boundary:
 | `sanitization-arrayvec` | `ArrayVec` storage |
 | `sanitization-bytes` | Fixed-capacity `BytesMut` storage |
 | `sanitization-crypto-interop` | SHA-2/BLAKE3 cleanup wrappers and HMAC-SHA2 helpers |
+| `sanitization-secrecy` | Secrecy-style boxed wrappers and exposure traits for incremental migration |
 
 The optional derive dependency is exact-pinned to the runtime's version because
 generated code may reference runtime traits introduced by that same release.
@@ -542,6 +544,12 @@ The release script publishes and waits for the derive crate before the core.
 `sanitization` focuses on ownership, lifecycle, explicit exposure, and optional
 platform protection. Interop features bridge trait bounds without replacing the
 core clearing backend.
+
+Projects migrating from `secrecy` 0.10 can use the
+[`sanitization-secrecy` migration guide](https://github.com/valkyoth/sanitization/blob/main/docs/SECRECY_MIGRATION.md).
+The companion confines reference-returning exposure, controlled cloning, and
+opt-in plaintext serialization to compatibility wrappers; native hardened
+containers do not acquire those weaker semantics.
 
 ## Verification And Release Checks
 
@@ -561,11 +569,11 @@ when installed. Native target evidence and timing runs are documented in
 Release publication is staged through:
 
 ```bash
-scripts/release_crates.py --version 2.0.4 --prepare-only
+scripts/release_crates.py --version 2.1.0 --prepare-only
 scripts/release_crates.py --require-tag
 ```
 
-The script publishes the five crates in dependency order and pauses while
+The script publishes the six crates in dependency order and pauses while
 crates.io indexes dependencies.
 
 ## Limits

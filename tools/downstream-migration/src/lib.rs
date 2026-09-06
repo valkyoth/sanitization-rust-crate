@@ -58,6 +58,8 @@ mod tests {
     use sanitization_arrayvec::SecretArrayVec;
     use sanitization_bytes::SecretBytesMut;
     use sanitization_crypto_interop::{blake3, hmac_sha2, sha2};
+    use secrecy::{ExposeSecret, ExposeSecretMut, SecretBox, SecretSlice, SecretString};
+    use secrecy::zeroize::Zeroize;
 
     #[derive(Clone, Copy, ConstantTimeEq, ConditionallySelectable)]
     struct Tag {
@@ -149,5 +151,25 @@ mod tests {
         let request = ProtectionRequest::locked();
         assert_eq!(request.memory_lock, Requirement::Required);
         assert_ne!(request.guard_pages, Requirement::Required);
+    }
+
+    #[test]
+    fn secrecy_package_alias_supports_incremental_migration() {
+        let mut token = SecretString::from("migration-token");
+        token.expose_secret_mut().make_ascii_uppercase();
+        assert_eq!(token.expose_secret(), "MIGRATION-TOKEN");
+
+        let bytes = SecretSlice::from(vec![1_u8, 2, 3, 4]);
+        assert_eq!(bytes.expose_secret(), &[1, 2, 3, 4]);
+
+        let fixed = SecretBox::<[u8; 4]>::init_with_mut(|output| {
+            output.copy_from_slice(b"test");
+        });
+        assert_eq!(fixed.expose_secret(), b"test");
+
+        let mut zeroize_compatible =
+            SecretBox::new(Box::new(core::array::from_fn(|index| index as u8 + 1)));
+        zeroize_compatible.zeroize();
+        assert_eq!(zeroize_compatible.expose_secret(), &[0; 4]);
     }
 }

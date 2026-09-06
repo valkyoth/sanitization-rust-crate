@@ -214,6 +214,22 @@ Invariant:
   ordinary Rust unwinding rules apply; the wrapper never raw-zeroes a still-live
   value to force cleanup through a panic.
 
+### `sanitization-secrecy` compatibility boundary
+
+The `sanitization-secrecy` companion contains no unsafe code and delegates
+cleanup of its current boxed value to `SecureSanitize`. Its optional `Zeroize`
+implementation calls that same path rather than defining another wipe
+primitive.
+
+This companion deliberately does not inherit the stronger native-container
+claims. `ExposeSecret` and `ExposeSecretMut` return references; code reached
+through those references can copy values or replace internal allocations.
+`CloneableSecret` authorizes an additional owned copy, and
+`SerializableSecret` authorizes plaintext output into serializer-controlled
+storage. Conversion from an existing `Vec` or `String` follows standard-library
+boxed conversion semantics and cannot recover allocations or copies released
+before final boxed ownership is established.
+
 ## Unsafe Operations
 
 ### `ptr::write_volatile`

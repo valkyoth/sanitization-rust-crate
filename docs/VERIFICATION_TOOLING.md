@@ -165,7 +165,8 @@ does not exercise unsupported targets or prove syscall semantics.
 
 ## Formal And Concurrency Checks
 
-Miri additionally covers `sanitization-bytes`, the crypto companion paths, and
+Miri additionally covers `sanitization-bytes`, the crypto and secrecy
+companion paths, and
 the fixed, dynamic, text, and pooled native locked-container lifecycle through
 a core-unit-test-only `cfg(all(miri, test))` aligned-allocation model. The model
 verifies complete clearing before deallocation but does not execute or validate
@@ -238,11 +239,11 @@ closed while meaningful literal boundaries remain accepted.
 ## Release Package Archives
 
 `scripts/verify-release-packages.py` packages the complete workspace together
-so not-yet-published internal 2.0 dependencies resolve without weakening their
+so not-yet-published coordinated internal dependencies resolve without weakening their
 crates.io version requirements. It then inspects each generated `.crate`
 archive and requires:
 
-- all five packages use the coordinated release version;
+- all publishable workspace packages use the coordinated release version;
 - normalized internal dependencies require that same version and contain no
   local path;
 - every packaged source, test, example, original manifest, and README matches

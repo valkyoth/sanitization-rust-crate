@@ -145,7 +145,7 @@ dependencies = [
 
 [[package]]
 name = "sanitization"
-version = "2.0.4"
+version = "2.1.0"
 dependencies = [
  "sanitization-derive",
  "serde",
@@ -156,7 +156,7 @@ dependencies = [
 
 [[package]]
 name = "sanitization-arrayvec"
-version = "2.0.4"
+version = "2.1.0"
 dependencies = [
  "arrayvec",
  "sanitization",
@@ -164,7 +164,7 @@ dependencies = [
 
 [[package]]
 name = "sanitization-bytes"
-version = "2.0.4"
+version = "2.1.0"
 dependencies = [
  "bytes",
  "sanitization",
@@ -172,7 +172,7 @@ dependencies = [
 
 [[package]]
 name = "sanitization-crypto-interop"
-version = "2.0.4"
+version = "2.1.0"
 dependencies = [
  "blake3",
  "sanitization",
@@ -182,11 +182,21 @@ dependencies = [
 
 [[package]]
 name = "sanitization-derive"
-version = "2.0.4"
+version = "2.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "sanitization-secrecy"
+version = "2.1.0"
+dependencies = [
+ "sanitization",
+ "serde",
+ "serde_json",
+ "zeroize",
 ]
 
 [[package]]

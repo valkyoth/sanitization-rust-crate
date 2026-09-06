@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0
+
+- Add `sanitization-secrecy`, an isolated compatibility companion for
+  migrating `secrecy` 0.10 applications.
+- Provide `SecretBox`, `SecretSlice`, `SecretString`, exposure traits,
+  controlled cloning, optional plaintext Serde, and default zeroize trait
+  compatibility while delegating wrapper cleanup to `SecureSanitize`.
+- Add `SecureSanitize` for `str` through the existing audited wipe backend.
+- Add package-alias migration fixtures and integrate the sixth crate into
+  checks, Miri, archive verification, documentation, and release tooling.
+- Coordinate all six workspace crates at version `2.1.0`.
+
 ## 2.0.4
 
 - Pin release development to Rust `1.98.1` while retaining Rust `1.90.0` as

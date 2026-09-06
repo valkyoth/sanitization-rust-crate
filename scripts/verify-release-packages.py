@@ -19,6 +19,7 @@ PACKAGE_DIRS = {
     "sanitization-arrayvec": ROOT / "crates" / "sanitization-arrayvec",
     "sanitization-bytes": ROOT / "crates" / "sanitization-bytes",
     "sanitization-crypto-interop": ROOT / "crates" / "sanitization-crypto-interop",
+    "sanitization-secrecy": ROOT / "crates" / "sanitization-secrecy",
 }
 INTERNAL_PACKAGES = frozenset(PACKAGE_DIRS)
 ALLOWED_GENERATED_FILES = {

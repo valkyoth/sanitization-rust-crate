@@ -2095,6 +2095,8 @@ impl sanitization::SecureSanitize for sanitization::SecretVec
 pub fn sanitization::SecretVec::secure_sanitize(&mut self)
 impl sanitization::SecureSanitize for sanitization::ct::SecretIndex
 pub fn sanitization::ct::SecretIndex::secure_sanitize(&mut self)
+impl sanitization::SecureSanitize for str
+pub fn str::secure_sanitize(&mut self)
 impl sanitization::SecureSanitize for u128
 pub fn u128::secure_sanitize(&mut self)
 impl sanitization::SecureSanitize for u16
@@ -2194,6 +2196,7 @@ impl sanitization::StableMutableSecretStorage for i64
 impl sanitization::StableMutableSecretStorage for i8
 impl sanitization::StableMutableSecretStorage for isize
 impl sanitization::StableMutableSecretStorage for sanitization::SecretBoxBytes
+impl sanitization::StableMutableSecretStorage for str
 impl sanitization::StableMutableSecretStorage for u128
 impl sanitization::StableMutableSecretStorage for u16
 impl sanitization::StableMutableSecretStorage for u32
@@ -2237,6 +2240,7 @@ impl sanitization::StableSharedSecretStorage for i64
 impl sanitization::StableSharedSecretStorage for i8
 impl sanitization::StableSharedSecretStorage for isize
 impl sanitization::StableSharedSecretStorage for sanitization::SecretBoxBytes
+impl sanitization::StableSharedSecretStorage for str
 impl sanitization::StableSharedSecretStorage for u128
 impl sanitization::StableSharedSecretStorage for u16
 impl sanitization::StableSharedSecretStorage for u32

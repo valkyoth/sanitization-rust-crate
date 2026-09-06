@@ -5,12 +5,13 @@ members = [
     "crates/sanitization-bytes",
     "crates/sanitization-crypto-interop",
     "crates/sanitization-derive",
+    "crates/sanitization-secrecy",
 ]
 default-members = ["crates/sanitization"]
 resolver = "2"
 
 [workspace.package]
-version = "2.0.4"
+version = "2.1.0"
 edition = "2021"
 rust-version = "1.90"
 license = "MIT OR Apache-2.0"

@@ -85,6 +85,14 @@ pub(crate) fn erase(ptr: *mut u8, len: usize) {
 }
 
 #[inline(never)]
+pub(crate) fn erase_str(text: &mut str) {
+    // SAFETY: replacing every byte with ASCII NUL preserves the `str` UTF-8
+    // invariant, and the mutable borrow provides exclusive access.
+    let bytes = unsafe { text.as_bytes_mut() };
+    erase(bytes.as_mut_ptr(), bytes.len());
+}
+
+#[inline(never)]
 pub(crate) fn erase_plain_data<T: ZeroValidPlainData>(value: &mut T) {
     compiler_fence(Ordering::SeqCst);
     // SAFETY: `value` is exclusively borrowed and `T::ZERO` is a valid value

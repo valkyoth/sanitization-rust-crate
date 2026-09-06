@@ -115,11 +115,15 @@ crates integrate external representations without duplicating that primitive.
 | `sanitization-arrayvec` | Exposes `arrayvec` storage and delegates clearing to `sanitization::wipe` |
 | `sanitization-bytes` | Enforces fixed-capacity `BytesMut` use and delegates clearing to `sanitization::wipe` |
 | `sanitization-crypto-interop` | Uses upstream hasher cleanup traits and core secret containers; it does not define a second memory-wipe backend |
+| `sanitization-secrecy` | Provides reference-exposure compatibility wrappers whose final owned-value cleanup delegates to `SecureSanitize` |
 
 Every companion dependency on `sanitization` sets `default-features = false`.
 The crypto-interop companion explicitly forwards the dependency-free
 `asm-compare` feature by default because it owns fixed-length verification
 helpers; its `strict-compare` feature remains the fail-closed profile.
+The secrecy compatibility companion enables `zeroize-interop` by default only
+to preserve familiar trait imports; its `Zeroize` implementation calls the
+same `SecureSanitize` cleanup path. Plaintext Serde remains separately opt-in.
 The proc-macro crate intentionally does not depend on the runtime crate.
 Conversely, the runtime's optional `sanitization-derive` dependency is pinned
 to the exact same release. Generated code may reference runtime APIs introduced

@@ -143,6 +143,14 @@ For the highest assurance, construct secrets directly inside crate-owned
 containers, use in-place APIs, keep exposure closures small, and avoid passing
 secret material through ordinary temporary arrays, strings, or vectors.
 
+`sanitization-secrecy` is a migration compatibility layer, not a hardened
+storage profile. Its exposure traits return ordinary references, cloning
+creates another secret owner, and opted-in plaintext serialization creates
+serializer-managed copies. Standard `Vec`/`String` to boxed conversions may
+discard excess capacity through allocator behavior the companion cannot later
+sanitize. Use native `sanitization` byte/text or mapped containers when storage
+history, scoped exposure, permanent bounds, or OS protection is required.
+
 Direct mapped initialization avoids a source-level temporary owned by the API,
 but it does not guarantee that a decoder, RNG, KDF, compiler, or calling
 convention never uses scratch memory or spills registers. Callers remain
